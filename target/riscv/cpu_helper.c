@@ -2015,6 +2015,11 @@ void riscv_cpu_do_interrupt(CPUState *cs)
 
     env->two_stage_lookup = false;
     env->two_stage_indirect_lookup = false;
+
+    /* Do extra interrupt action */
+    if (env->do_interrupt_post) {
+        env->do_interrupt_post(cs);
+    }
 }
 
 #endif /* !CONFIG_USER_ONLY */
