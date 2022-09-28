@@ -619,6 +619,7 @@ static void rv64_andes_ax25_cpu_init(Object *obj)
 
     /* Enable Andes Custom extension */
     cfg->ext_XAndesV5Ops = true;
+    cfg->ext_XAndesCodenseOps = true;
 
     /* Set vendor ID */
     cfg->mvendorid = 0x0000031e;
@@ -810,6 +811,7 @@ static void rv32_andes_a25_cpu_init(Object *obj)
 
     /* Enable Andes Custom extension */
     cfg->ext_XAndesV5Ops = true;
+    cfg->ext_XAndesCodenseOps = true;
 
     /* Set vendor ID */
     cfg->mvendorid = 0x0000031e;
@@ -1749,6 +1751,7 @@ const RISCVCPUMultiExtConfig riscv_cpu_vendor_exts[] = {
     MULTI_EXT_CFG_BOOL("xtheadsync", ext_xtheadsync, false),
     MULTI_EXT_CFG_BOOL("xventanacondops", ext_XVentanaCondOps, false),
     MULTI_EXT_CFG_BOOL("xandesv5ops", ext_XAndesV5Ops, false),
+    MULTI_EXT_CFG_BOOL("xandescodenseops", ext_XAndesCodenseOps, false),
 
     DEFINE_PROP_END_OF_LIST(),
 };

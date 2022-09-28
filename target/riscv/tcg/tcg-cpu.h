@@ -32,6 +32,10 @@ typedef struct RISCVDecoder {
     bool (*guard_func)(const struct RISCVCPUConfig *);
     bool (*riscv_cpu_decode_fn)(struct DisasContext *, uint32_t);
 } RISCVDecoder;
+typedef struct RISCVDecoder16 {
+    bool (*guard_func)(const struct RISCVCPUConfig *);
+    bool (*riscv_cpu_decode_fn)(struct DisasContext *, uint16_t);
+} RISCVDecoder16;
 
 typedef bool (*riscv_cpu_decode_fn)(struct DisasContext *, uint32_t);
 

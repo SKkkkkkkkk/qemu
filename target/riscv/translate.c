@@ -24,6 +24,7 @@
 #include "exec/helper-proto.h"
 #include "exec/helper-gen.h"
 
+#include "exec/cpu_ldst.h"
 #include "exec/translator.h"
 #include "exec/log.h"
 #include "semihosting/semihost.h"
@@ -1166,7 +1167,9 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
 /* Include decoders for factored-out extensions */
 #include "decode-XVentanaCondOps.c.inc"
 #include "decode-XAndesV5Ops.c.inc"
+#include "decode-XAndesCodenseOps.c.inc"
 #include "insn_trans/trans_xandesv5ops.c.inc"
+#include "insn_trans/trans_xandescodenseops.c.inc"
 
 /* The specification allows for longer insns, but not supported by qemu. */
 #define MAX_INSN_LEN  4
@@ -1183,7 +1186,13 @@ const RISCVDecoder decoder_table[] = {
     { has_XAndesV5Ops_p,  decode_XAndesV5Ops },
 };
 
+const RISCVDecoder16 decoder16_table[] = {
+    { always_true_p,  decode_insn16 },
+    { has_XAndesCodenseOps_p, decode_XAndesCodenseOps },
+};
+
 const size_t decoder_table_size = ARRAY_SIZE(decoder_table);
+const size_t decoder16_table_size = ARRAY_SIZE(decoder16_table);
 
 static void decode_opc(CPURISCVState *env, DisasContext *ctx, uint16_t opcode)
 {
@@ -1196,9 +1205,15 @@ static void decode_opc(CPURISCVState *env, DisasContext *ctx, uint16_t opcode)
          * The Zca extension is added as way to refer to instructions in the C
          * extension that do not include the floating-point loads and stores
          */
-        if ((has_ext(ctx, RVC) || ctx->cfg_ptr->ext_zca) &&
-            decode_insn16(ctx, opcode)) {
-            return;
+        if (!has_ext(ctx, RVC) && !ctx->cfg_ptr->ext_zca) {
+            gen_exception_illegal(ctx);
+        } else {
+            for (size_t i = 0; i < decoder16_table_size; ++i) {
+                if (decoder16_table[i].guard_func(ctx->cfg_ptr) &&
+                    decoder16_table[i].riscv_cpu_decode_fn(ctx, opcode)) {
+                    return;
+                }
+            }
         }
     } else {
         uint32_t opcode32 = opcode;
