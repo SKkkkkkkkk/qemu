@@ -1174,8 +1174,10 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
 #else
 #include "decode-XAndesCodenseV2Ops.c.inc"
 #endif
+#include "decode-XAndesAce.c.inc"
 #include "insn_trans/trans_xandesv5ops.c.inc"
 #include "insn_trans/trans_xandescodenseops.c.inc"
+#include "insn_trans/trans_xandesace.c.inc"
 
 /* The specification allows for longer insns, but not supported by qemu. */
 #define MAX_INSN_LEN  4
