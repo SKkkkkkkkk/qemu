@@ -44,7 +44,7 @@ typedef struct CPUArchState CPURISCVState;
 #endif
 
 /* Vendor CSR declaration */
-#include "csr_andes.inc.h"
+#include "csr_andes.h"
 
 /*
  * RISC-V-specific extra insn start words:
