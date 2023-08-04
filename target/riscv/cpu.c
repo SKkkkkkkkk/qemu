@@ -777,7 +777,7 @@ static void rv64_andes_nx45v_cpu_init(Object *obj)
     CPURISCVState *env = &RISCV_CPU(obj)->env;
 
     riscv_cpu_set_misa_ext(env, RVI | RVM | RVA | RVF | RVD | RVC | RVU | RVV | RVX);
-    rv64_andes_common_cpu_init(obj, andes_spec_csr_init_nx45v);
+    rv64_andes_common_cpu_init(obj, andes_spec_csr_init_nx45v_meta);
     cfg->mmu = false;
 #ifndef CONFIG_USER_ONLY
     memset(&cfg->satp_mode, 0, sizeof(RISCVSATPMap));
