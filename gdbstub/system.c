@@ -30,6 +30,7 @@
 #include "monitor/monitor.h"
 #include "trace.h"
 #include "internals.h"
+#include "gdbstub/andes_ace_gdb.c.inc"
 
 /* System emulation specific state */
 typedef struct {
@@ -535,6 +536,10 @@ void gdb_handle_query_rcmd(GArray *params, void *ctx)
     len = len / 2;
     gdb_hextomem(gdbserver_state.mem_buf, gdb_get_cmd_param(params, 0)->data, len);
     g_byte_array_append(gdbserver_state.mem_buf, &zero, 1);
+    /* process 'nds query' commands */
+    if (gdb_handle_query_rcmd_nds_query(params, ctx) == 0) {
+        return;
+    }
     qemu_chr_be_write(gdbserver_system_state.mon_chr,
                       gdbserver_state.mem_buf->data,
                       gdbserver_state.mem_buf->len);
