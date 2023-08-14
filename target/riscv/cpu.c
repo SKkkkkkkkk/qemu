@@ -771,13 +771,13 @@ static void rv64_andes_nx45_cpu_init(Object *obj)
     cfg->marchid = 0x8045;
 }
 
-static void rv64_andes_nx45v_meta_cpu_init(Object *obj)
+static void rv64_andes_nx45v_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
     CPURISCVState *env = &RISCV_CPU(obj)->env;
 
     riscv_cpu_set_misa_ext(env, RVI | RVM | RVA | RVF | RVD | RVC | RVU | RVV | RVX);
-    rv64_andes_common_cpu_init(obj, andes_spec_csr_init_nx45v_meta);
+    rv64_andes_common_cpu_init(obj, andes_spec_csr_init_nx45v);
     cfg->mmu = false;
 #ifndef CONFIG_USER_ONLY
     memset(&cfg->satp_mode, 0, sizeof(RISCVSATPMap));
@@ -3240,54 +3240,54 @@ static const TypeInfo riscv_cpu_type_infos[] = {
         .abstract = true,
     },
 #if defined(TARGET_RISCV32)
-    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_MAX,       MXL_RV32,  riscv_max_cpu_init),
+    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_MAX,         MXL_RV32,  riscv_max_cpu_init),
 #elif defined(TARGET_RISCV64)
-    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_MAX,       MXL_RV64,  riscv_max_cpu_init),
+    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_MAX,         MXL_RV64,  riscv_max_cpu_init),
 #endif
 
 #if defined(TARGET_RISCV32) || \
     (defined(TARGET_RISCV64) && !defined(CONFIG_USER_ONLY))
-    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_BASE32,     MXL_RV32,  rv32_base_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A25,   MXL_RV32,  rv32_andes_a25_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A27,   MXL_RV32,  rv32_andes_a27_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A45,   MXL_RV32,  rv32_andes_a45_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N25,   MXL_RV32,  rv32_andes_n25_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N45,   MXL_RV32,  rv32_andes_n45_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_IBEX,        MXL_RV32,  rv32_ibex_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SIFIVE_E31,  MXL_RV32,  rv32_sifive_e_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SIFIVE_E34,  MXL_RV32,  rv32_imafcu_nommu_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SIFIVE_U34,  MXL_RV32,  rv32_sifive_u_cpu_init),
-    DEFINE_BARE_CPU(TYPE_RISCV_CPU_RV32I,         MXL_RV32,  rv32i_bare_cpu_init),
-    DEFINE_BARE_CPU(TYPE_RISCV_CPU_RV32E,         MXL_RV32,  rv32e_bare_cpu_init),
+    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_BASE32,      MXL_RV32,  rv32_base_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A25,    MXL_RV32,  rv32_andes_a25_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A27,    MXL_RV32,  rv32_andes_a27_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A45,    MXL_RV32,  rv32_andes_a45_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N25,    MXL_RV32,  rv32_andes_n25_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N45,    MXL_RV32,  rv32_andes_n45_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_IBEX,         MXL_RV32,  rv32_ibex_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SIFIVE_E31,   MXL_RV32,  rv32_sifive_e_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SIFIVE_E34,   MXL_RV32,  rv32_imafcu_nommu_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SIFIVE_U34,   MXL_RV32,  rv32_sifive_u_cpu_init),
+    DEFINE_BARE_CPU(TYPE_RISCV_CPU_RV32I,          MXL_RV32,  rv32i_bare_cpu_init),
+    DEFINE_BARE_CPU(TYPE_RISCV_CPU_RV32E,          MXL_RV32,  rv32e_bare_cpu_init),
 #endif
 
 #if (defined(TARGET_RISCV64) && !defined(CONFIG_USER_ONLY))
-    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_MAX32,     MXL_RV32,  riscv_max_cpu_init),
+    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_MAX32,       MXL_RV32,  riscv_max_cpu_init),
 #endif
 
 #if defined(TARGET_RISCV64)
-    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_MAX,              MXL_RV64,  riscv_max_cpu_init),
-    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_BASE64,           MXL_RV64,  rv64_base_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX25,        MXL_RV64,  rv64_andes_ax25_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX27,        MXL_RV64,  rv64_andes_ax27_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX45,        MXL_RV64,  rv64_andes_ax45_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX65,        MXL_RV64,  rv64_andes_ax65_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX25,        MXL_RV64,  rv64_andes_nx25_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX27V,       MXL_RV64,  rv64_andes_nx27v_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX45,        MXL_RV64,  rv64_andes_nx45_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX45V_META,  MXL_RV64,  rv64_andes_nx45v_meta_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SIFIVE_E51,        MXL_RV64,  rv64_sifive_e_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SIFIVE_U54,        MXL_RV64,  rv64_sifive_u_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SHAKTI_C,          MXL_RV64,  rv64_sifive_u_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_THEAD_C906,        MXL_RV64,  rv64_thead_c906_cpu_init),
-    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_VEYRON_V1,         MXL_RV64,  rv64_veyron_v1_cpu_init),
+    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_MAX,         MXL_RV64,  riscv_max_cpu_init),
+    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_BASE64,      MXL_RV64,  rv64_base_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX25,   MXL_RV64,  rv64_andes_ax25_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX27,   MXL_RV64,  rv64_andes_ax27_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX45,   MXL_RV64,  rv64_andes_ax45_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX65,   MXL_RV64,  rv64_andes_ax65_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX25,   MXL_RV64,  rv64_andes_nx25_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX27V,  MXL_RV64,  rv64_andes_nx27v_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX45,   MXL_RV64,  rv64_andes_nx45_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX45V,  MXL_RV64,  rv64_andes_nx45v_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SIFIVE_E51,   MXL_RV64,  rv64_sifive_e_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SIFIVE_U54,   MXL_RV64,  rv64_sifive_u_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SHAKTI_C,     MXL_RV64,  rv64_sifive_u_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_THEAD_C906,   MXL_RV64,  rv64_thead_c906_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_VEYRON_V1,    MXL_RV64,  rv64_veyron_v1_cpu_init),
 #ifdef CONFIG_TCG
-    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_BASE128,          MXL_RV128, rv128_base_cpu_init),
+    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_BASE128,     MXL_RV128, rv128_base_cpu_init),
 #endif /* CONFIG_TCG */
-    DEFINE_BARE_CPU(TYPE_RISCV_CPU_RV64I,               MXL_RV64,  rv64i_bare_cpu_init),
-    DEFINE_BARE_CPU(TYPE_RISCV_CPU_RV64E,               MXL_RV64,  rv64e_bare_cpu_init),
-    DEFINE_PROFILE_CPU(TYPE_RISCV_CPU_RVA22U64,         MXL_RV64,  rva22u64_profile_cpu_init),
-    DEFINE_PROFILE_CPU(TYPE_RISCV_CPU_RVA22S64,         MXL_RV64,  rva22s64_profile_cpu_init),
+    DEFINE_BARE_CPU(TYPE_RISCV_CPU_RV64I,          MXL_RV64,  rv64i_bare_cpu_init),
+    DEFINE_BARE_CPU(TYPE_RISCV_CPU_RV64E,          MXL_RV64,  rv64e_bare_cpu_init),
+    DEFINE_PROFILE_CPU(TYPE_RISCV_CPU_RVA22U64,    MXL_RV64,  rva22u64_profile_cpu_init),
+    DEFINE_PROFILE_CPU(TYPE_RISCV_CPU_RVA22S64,    MXL_RV64,  rva22s64_profile_cpu_init),
 #endif /* TARGET_RISCV64 */
 };
 
