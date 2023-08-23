@@ -771,11 +771,13 @@ static void riscv_cpu_validate_andes_ace(RISCVCPU *cpu, Error **errp)
     }
 
     if (cpu->cfg.ext_XAndesAce) { /* cfg.ext_XAndesAce is true, cfg.XAndesAceLib cannot be NULL since above check already */
-        if (load_qemu_ace_wrapper(cpu->cfg.XAndesAceLib) != 0) {
+        if (qemu_ace_load_wrapper(cpu->cfg.XAndesAceLib, env->mhartid) != 0) {
             error_setg(errp, "xandesacelib '%s' cannot be loaded", cpu->cfg.XAndesAceLib);
             return;
         } else {
-            qemu_ace_agent_register(env);
+            qemu_ace_agent_register(env, cpu->cfg.XAndesAceExtLibPath,
+                                         env->mhartid,
+                                         cpu->cfg.ext_XAndesAceMulti);
         }
     }
 }

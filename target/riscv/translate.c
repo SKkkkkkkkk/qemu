@@ -1192,6 +1192,7 @@ const RISCVDecoder decoder_table[] = {
     { has_xthead_p, decode_xthead},
     { has_XVentanaCondOps_p, decode_XVentanaCodeOps},
     { has_XAndesV5Ops_p,  decode_XAndesV5Ops },
+    { has_XAndesAce_p,  decode_XAndesAce },
 };
 
 const RISCVDecoder16 decoder16_table[] = {

@@ -7,10 +7,12 @@
 #include "instmap.h"
 #define GP 3
 
-#define REQUIRE_CFG(ENV, CSRNO, CSRFIELD) do {\
+#define REQUIRE_CFG(CSRNO, CSRFIELD) do {\
+    CPUState *cpu = ctx->cs; \
+    CPURISCVState *env = cpu_env(cpu); \
     RISCVException ret; \
     target_ulong value; \
-    ret = riscv_csrrw(ENV, CSRNO, &value, 0, 0); \
+    ret = riscv_csrrw(env, CSRNO, &value, 0, 0); \
     if (ret != RISCV_EXCP_NONE) \
         return false; \
     if (!(value & CSRFIELD)) \
@@ -18,50 +20,42 @@
 } while (0);
 
 #define REQUIRE_BF16CVT do { \
-    CPURISCVState *env = cpu_env(ctx->cs); \
-    if (env->misa_mxl == MXL_RV32) { \
-        REQUIRE_CFG(env, CSR_MMSC_CFG2, MASK_MMSC_CFG2_BF16CVT) \
+    if (cpu_env(ctx->cs)->misa_mxl == MXL_RV32) { \
+        REQUIRE_CFG(CSR_MMSC_CFG2, MASK_MMSC_CFG2_BF16CVT) \
     } \
-    REQUIRE_CFG(env, CSR_MMSC_CFG, MASK_MMSC_CFG_BF16CVT) \
-} while (0)
+    REQUIRE_CFG(CSR_MMSC_CFG, MASK_MMSC_CFG_BF16CVT) \
+} while (0);
 
 #define MASK_MVEC_CFG_MFSEW (0x3 << 16)
-#define REQUIRE_MFSEW do { \
-    CPURISCVState *env = cpu_env(ctx->cs); \
-    REQUIRE_CFG(env, CSR_MVEC_CFG, MASK_MVEC_CFG_MFSEW) \
-} while (0)
+#define REQUIRE_MFSEW REQUIRE_CFG(CSR_MVEC_CFG, MASK_MVEC_CFG_MFSEW)
 
 #define REQUIRE_VPFH do { \
-    CPURISCVState *env = cpu_env(ctx->cs); \
-    if (env->misa_mxl == MXL_RV32) { \
-        REQUIRE_CFG(env, CSR_MMSC_CFG2, MASK_MMSC_CFG2_VPFH) \
+    if (cpu_env(ctx->cs)->misa_mxl == MXL_RV32) { \
+        REQUIRE_CFG(CSR_MMSC_CFG2, MASK_MMSC_CFG2_VPFH) \
     } \
-    REQUIRE_CFG(env, CSR_MMSC_CFG, MASK_MMSC_CFG_VPFH) \
-} while (0)
+    REQUIRE_CFG(CSR_MMSC_CFG, MASK_MMSC_CFG_VPFH) \
+} while (0);
 
 #define REQUIRE_VL4 do { \
-    CPURISCVState *env = cpu_env(ctx->cs); \
-    if (env->misa_mxl == MXL_RV32) { \
-        REQUIRE_CFG(env, CSR_MMSC_CFG2, MASK_MMSC_CFG2_VL4) \
+    if (cpu_env(ctx->cs)->misa_mxl == MXL_RV32) { \
+        REQUIRE_CFG(CSR_MMSC_CFG2, MASK_MMSC_CFG2_VL4) \
     } \
-    REQUIRE_CFG(env, CSR_MMSC_CFG, MASK_MMSC_CFG_VL4) \
-} while (0)
+    REQUIRE_CFG(CSR_MMSC_CFG, MASK_MMSC_CFG_VL4) \
+} while (0);
 
 #define REQUIRE_VDOT do { \
-    CPURISCVState *env = cpu_env(ctx->cs); \
-    if (env->misa_mxl == MXL_RV32) { \
-        REQUIRE_CFG(env, CSR_MMSC_CFG2, MASK_MMSC_CFG2_VDOT) \
+    if (cpu_env(ctx->cs)->misa_mxl == MXL_RV32) { \
+        REQUIRE_CFG(CSR_MMSC_CFG2, MASK_MMSC_CFG2_VDOT) \
     } \
-    REQUIRE_CFG(env, CSR_MMSC_CFG, MASK_MMSC_CFG_VDOT) \
-} while (0)
+    REQUIRE_CFG(CSR_MMSC_CFG, MASK_MMSC_CFG_VDOT) \
+} while (0);
 
 #define REQUIRE_VSIH do { \
-    CPURISCVState *env = cpu_env(ctx->cs); \
-    if (env->misa_mxl == MXL_RV32) { \
-        REQUIRE_CFG(env, CSR_MMSC_CFG2, MASK_MMSC_CFG2_VSIH) \
+    if (cpu_env(ctx->cs)->misa_mxl == MXL_RV32) { \
+        REQUIRE_CFG(CSR_MMSC_CFG2, MASK_MMSC_CFG2_VSIH) \
     } \
-    REQUIRE_CFG(env, CSR_MMSC_CFG, MASK_MMSC_CFG_VSIH) \
-} while (0)
+    REQUIRE_CFG(CSR_MMSC_CFG, MASK_MMSC_CFG_VSIH) \
+} while (0);
 
 enum andes_v5_inst_id {
     /* Code Dense Extension */
