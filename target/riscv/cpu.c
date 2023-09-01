@@ -1237,6 +1237,7 @@ static int riscv_cpu_mmu_index(CPUState *cs, bool ifetch)
     return riscv_env_mmu_index(cpu_env(cs), ifetch);
 }
 
+#ifndef CONFIG_USER_ONLY
 static void andes_csr_reset_common(CPURISCVState *env)
 {
     env->andes_csr.csrno[CSR_MXSTATUS] = 0;
@@ -1263,6 +1264,7 @@ static void andes_csr_reset_common(CPURISCVState *env)
     env->andes_csr.csrno[CSR_MSP_BOUND] = ~((target_ulong)0);
     env->andes_csr.csrno[CSR_MSP_BASE] = ~((target_ulong)0);
 }
+#endif
 
 static void riscv_cpu_reset_hold(Object *obj, ResetType type)
 {
