@@ -28,6 +28,7 @@
 #include "qapi/error.h"
 #include "qapi/visitor.h"
 #include "qemu/error-report.h"
+#include "qemu/main-loop.h"
 #include "hw/qdev-properties.h"
 #include "hw/core/qdev-prop-internal.h"
 #include "migration/vmstate.h"
@@ -38,6 +39,8 @@
 #include "kvm/kvm_riscv.h"
 #include "tcg/tcg-cpu.h"
 #include "tcg/tcg.h"
+#include "exec/address-spaces.h"
+#include "exec/ramblock.h"
 
 /* RISC-V CPU definitions */
 static const char riscv_single_letter_exts[] = "IEMAFDQCBPVH";
@@ -315,6 +318,8 @@ static const char * const riscv_intr_names[] = {
     "reserved"
 };
 
+static void register_andes_cpu_props(Object *obj);
+
 const char *riscv_cpu_get_trap_name(target_ulong cause, bool async)
 {
     if (async) {
@@ -470,6 +475,133 @@ static void andes_set_mmsc_cfg_l2c(AndesCsr *andes_csr)
 #elif defined(TARGET_RISCV64)
     andes_csr->csrno[CSR_MMSC_CFG] |= (1UL << V5_MMSC_CFG_L2C);
 #endif
+}
+
+static uint64_t memory_region_local_mem_read(void *opaque,
+                                              hwaddr addr, unsigned size)
+{
+    MemoryRegion *mr = opaque;
+    uint64_t data = (uint64_t)~0;
+
+    switch (size) {
+    case 1:
+        data = *(uint8_t *)(mr->ram_block->host + addr);
+        break;
+    case 2:
+        data = *(uint16_t *)(mr->ram_block->host + addr);
+        break;
+    case 4:
+        data = *(uint32_t *)(mr->ram_block->host + addr);
+        break;
+    case 8:
+        data = *(uint64_t *)(mr->ram_block->host + addr);
+        break;
+    }
+
+    return data;
+}
+
+static void memory_region_local_mem_write(void *opaque, hwaddr addr,
+                                           uint64_t data, unsigned size)
+{
+    MemoryRegion *mr = opaque;
+
+    switch (size) {
+    case 1:
+        *(uint8_t *)(mr->ram_block->host + addr) = (uint8_t)data;
+        break;
+    case 2:
+        *(uint16_t *)(mr->ram_block->host + addr) = (uint16_t)data;
+        break;
+    case 4:
+        *(uint32_t *)(mr->ram_block->host + addr) = (uint32_t)data;
+        break;
+    case 8:
+        *(uint64_t *)(mr->ram_block->host + addr) = data;
+        break;
+    }
+}
+
+static const MemoryRegionOps local_mem_ops = {
+    .read = memory_region_local_mem_read,
+    .write = memory_region_local_mem_write,
+    .endianness = DEVICE_LITTLE_ENDIAN,
+    .valid = {
+        .min_access_size = 1,
+        .max_access_size = 8,
+        .unaligned = true,
+        .accepts = NULL,
+    },
+    .impl = {
+        .min_access_size = 1,
+        .max_access_size = 8,
+        .unaligned = true,
+    },
+};
+
+static void andes_cpu_lm_init(Object *obj)
+{
+    CPURISCVState *env = &RISCV_CPU(obj)->env;
+    CPUState *cs = CPU(obj);
+    env->cpu_as_root = g_new(MemoryRegion, 1);
+    env->cpu_as_mem = g_new(MemoryRegion, 1);
+    /* Outer container... */
+    memory_region_init(env->cpu_as_root, OBJECT(obj), "cpu-as-root", ~0ull);
+    memory_region_set_enabled(env->cpu_as_root, true);
+
+    memory_region_init_alias(env->cpu_as_mem, OBJECT(obj), "cpu-as-mem",
+                             get_system_memory(), 0, ~0ull);
+    memory_region_add_subregion_overlap(env->cpu_as_root, 0,
+                                        env->cpu_as_mem, 0);
+    memory_region_set_enabled(env->cpu_as_mem, true);
+
+    cs->num_ases = 1;
+    cpu_address_space_init(cs, 0, "cpu-memory", env->cpu_as_root);
+    env->mask_ilm = g_new(MemoryRegion, 1);
+    env->mask_dlm = g_new(MemoryRegion, 1);
+}
+
+static void andes_cpu_lm_realize(DeviceState *dev)
+{
+    CPURISCVState *env = &RISCV_CPU(dev)->env;
+    int lm_num = env->mhartid;
+    g_autofree char *ilm_name =
+        g_strdup_printf("%s%d", "riscv.andes.ae350.ilm", lm_num);
+    g_autofree char *dlm_name =
+        g_strdup_printf("%s%d", "riscv.andes.ae350.dlm", lm_num);
+
+    memory_region_init_ram(env->mask_ilm, OBJECT(dev), ilm_name,
+                            env->ilm_size, &error_fatal);
+    memory_region_init_ram(env->mask_dlm, OBJECT(dev), dlm_name,
+                            env->dlm_size, &error_fatal);
+    /* local memory operation */
+    env->mask_ilm->ops = &local_mem_ops;
+    env->mask_ilm->opaque = env->mask_ilm;
+    env->mask_dlm->ops = &local_mem_ops;
+    env->mask_dlm->opaque = env->mask_dlm;
+
+    /* round down to valid value */
+    int ilmsz = 31 - __builtin_clz(env->ilm_size) - 9;
+    int dlmsz = 31 - __builtin_clz(env->dlm_size) - 9;
+    env->ilm_size = 1 << (ilmsz + 9);
+    env->dlm_size = 1 << (dlmsz + 9);
+
+    /* initial local memory csr */
+    env->andes_csr.csrno[CSR_MICM_CFG] = (1UL << V5_MICM_CFG_ILMB) |
+                                     (ilmsz << V5_MICM_CFG_ILMSZ);
+    env->andes_csr.csrno[CSR_MDCM_CFG] = (1UL << V5_MDCM_CFG_DLMB) |
+                                     (dlmsz << V5_MICM_CFG_DLMSZ);
+
+    env->andes_csr.csrno[CSR_MILMB] = env->ilm_base | env->ilm_default_enable;
+    env->andes_csr.csrno[CSR_MDLMB] = env->dlm_base | env->dlm_default_enable;
+    if (env->ilm_default_enable) {
+        memory_region_add_subregion_overlap(env->cpu_as_root, env->ilm_base,
+                                    env->mask_ilm, 1);
+    }
+    if (env->dlm_default_enable) {
+        memory_region_add_subregion_overlap(env->cpu_as_root, env->dlm_base,
+                                    env->mask_dlm, 1);
+    }
 }
 
 #if defined(TARGET_RISCV64)
@@ -628,6 +760,7 @@ static void rv64_andes_common_cpu_init(Object *obj, fp_csr_init_fn spec_csr_init
     if (!env->misa_ext) {
         riscv_cpu_set_misa_ext(env, RVI | RVM | RVA | RVF | RVD | RVC | RVS | RVU);
     }
+    register_andes_cpu_props(obj);
     env->priv_ver = PRIV_VERSION_1_12_0;
 #ifndef CONFIG_USER_ONLY
     set_satp_mode_max_supported(RISCV_CPU(obj), VM_1_10_SV48);
@@ -639,6 +772,8 @@ static void rv64_andes_common_cpu_init(Object *obj, fp_csr_init_fn spec_csr_init
         spec_csr_init(&env->andes_csr);
     }
     andes_vec_init(&env->andes_vec);
+    /* Setup local memory */
+    andes_cpu_lm_init(obj);
 
     env->do_interrupt_post = andes_cpu_do_interrupt_post;
 
@@ -936,6 +1071,7 @@ static void rv32_andes_common_cpu_init(Object *obj, fp_csr_init_fn spec_csr_init
     if (!env->misa_ext) {
         riscv_cpu_set_misa_ext(env, RVI | RVM | RVA | RVF | RVD | RVC | RVS | RVU);
     }
+    register_andes_cpu_props(obj);
     env->priv_ver = PRIV_VERSION_1_12_0;
 #ifndef CONFIG_USER_ONLY
     set_satp_mode_max_supported(RISCV_CPU(obj), VM_1_10_SV32);
@@ -947,6 +1083,8 @@ static void rv32_andes_common_cpu_init(Object *obj, fp_csr_init_fn spec_csr_init
         spec_csr_init(&env->andes_csr);
     }
     andes_vec_init(&env->andes_vec);
+    /* Setup local memory */
+    andes_cpu_lm_init(obj);
 
     env->do_interrupt_post = andes_cpu_do_interrupt_post;
 
@@ -1325,6 +1463,35 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
     }
     env->pmp_state.num_rules = 0;
 
+    env->andes_csr.csrno[CSR_MILMB] = env->ilm_base | env->ilm_default_enable;
+    env->andes_csr.csrno[CSR_MDLMB] = env->dlm_base | env->dlm_default_enable;
+
+    bool locked = false;
+    if (!bql_locked()) {
+        locked = true;
+        bql_lock();
+    }
+    if (env->ilm_default_enable) {
+        if (!memory_region_is_mapped(env->mask_ilm)) {
+            memory_region_add_subregion_overlap(env->cpu_as_root,
+                                env->ilm_base, env->mask_ilm, 1);
+        }
+    } else if (memory_region_is_mapped(env->mask_ilm)) {
+        memory_region_del_subregion(env->cpu_as_root, env->mask_ilm);
+    }
+    if (env->dlm_default_enable) {
+        if (!memory_region_is_mapped(env->mask_dlm)) {
+            memory_region_add_subregion_overlap(env->cpu_as_root,
+                                env->dlm_base, env->mask_dlm, 1);
+        }
+    } else if (memory_region_is_mapped(env->mask_dlm)) {
+        memory_region_del_subregion(env->cpu_as_root, env->mask_dlm);
+    }
+    tlb_flush(env_cpu(env));
+    if (locked) {
+        bql_unlock();
+    }
+
     env->miclaim = MIP_SGEIP;
     env->pc = env->resetvec;
     env->bins = 0;
@@ -1551,6 +1718,7 @@ static void riscv_cpu_realize(DeviceState *dev, Error **errp)
 #endif
 
     qemu_init_vcpu(cs);
+    andes_cpu_lm_realize(dev);
     cpu_reset(cs);
 
     mcc->parent_realize(dev, errp);
@@ -3067,6 +3235,28 @@ static Property riscv_cpu_properties[] = {
     DEFINE_PROP_BOOL("x-misa-w", RISCVCPU, cfg.misa_w, false),
     DEFINE_PROP_END_OF_LIST(),
 };
+
+static Property andes_cpu_property[] = {
+    /* Defaults for standard extensions */
+    DEFINE_PROP_UINT64("ilm_base", RISCVCPU, env.ilm_base, 0),
+    DEFINE_PROP_UINT64("dlm_base", RISCVCPU, env.dlm_base, 0x200000),
+    DEFINE_PROP_UINT32("ilm_size", RISCVCPU, env.ilm_size, 0x200000),
+    DEFINE_PROP_UINT32("dlm_size", RISCVCPU, env.dlm_size, 0x200000),
+    DEFINE_PROP_BOOL("ilm_default_enable", RISCVCPU, env.ilm_default_enable,
+                     false),
+    DEFINE_PROP_BOOL("dlm_default_enable", RISCVCPU, env.dlm_default_enable,
+                     false),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
+static void register_andes_cpu_props(Object *obj)
+{
+    DeviceState *dev = DEVICE(obj);
+    Property *prop;
+    for (prop = andes_cpu_property; prop && prop->name; prop++) {
+        qdev_property_add_static(dev, prop);
+    }
+}
 
 #if defined(TARGET_RISCV64)
 static void rva22u64_profile_cpu_init(Object *obj)
