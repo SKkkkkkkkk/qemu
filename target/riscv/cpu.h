@@ -499,6 +499,7 @@ struct CPUArchState {
     AndesVec andes_vec;
     void (*do_interrupt_post)(CPUState *cpu);
 
+#ifndef CONFIG_USER_ONLY
     MemoryRegion *cpu_as_root;
     MemoryRegion *cpu_as_mem;
     MemoryRegion *mask_ilm;
@@ -509,6 +510,8 @@ struct CPUArchState {
     uint32_t dlm_size;
     bool ilm_default_enable;
     bool dlm_default_enable;
+#endif
+
 };
 
 /*

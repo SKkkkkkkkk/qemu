@@ -477,6 +477,7 @@ static void andes_set_mmsc_cfg_l2c(AndesCsr *andes_csr)
 #endif
 }
 
+#ifndef CONFIG_USER_ONLY
 static uint64_t memory_region_local_mem_read(void *opaque,
                                               hwaddr addr, unsigned size)
 {
@@ -603,6 +604,7 @@ static void andes_cpu_lm_realize(DeviceState *dev)
                                     env->mask_dlm, 1);
     }
 }
+#endif
 
 #if defined(TARGET_RISCV64)
 static void rv64_base_cpu_init(Object *obj)
@@ -772,8 +774,11 @@ static void rv64_andes_common_cpu_init(Object *obj, fp_csr_init_fn spec_csr_init
         spec_csr_init(&env->andes_csr);
     }
     andes_vec_init(&env->andes_vec);
+
+#ifndef CONFIG_USER_ONLY
     /* Setup local memory */
     andes_cpu_lm_init(obj);
+#endif
 
     env->do_interrupt_post = andes_cpu_do_interrupt_post;
 
@@ -952,8 +957,8 @@ static void rv64_andes_nx45v_cpu_init(Object *obj)
 #endif
 
     /* RVV extension */
-    cfg->vext_spec = g_strdup("v1.0");
-    cfg->vlen = 512;
+    env->vext_ver = VEXT_VERSION_1_00_0;
+    cfg->vlenb = 512;
     cfg->elen = 64;
 
     /* Set CPU ID & Implementation ID */
@@ -1088,8 +1093,11 @@ static void rv32_andes_common_cpu_init(Object *obj, fp_csr_init_fn spec_csr_init
         spec_csr_init(&env->andes_csr);
     }
     andes_vec_init(&env->andes_vec);
+
+#ifndef CONFIG_USER_ONLY
     /* Setup local memory */
     andes_cpu_lm_init(obj);
+#endif
 
     env->do_interrupt_post = andes_cpu_do_interrupt_post;
 
@@ -1724,7 +1732,9 @@ static void riscv_cpu_realize(DeviceState *dev, Error **errp)
 #endif
 
     qemu_init_vcpu(cs);
+#ifndef CONFIG_USER_ONLY
     andes_cpu_lm_realize(dev);
+#endif
     cpu_reset(cs);
 
     mcc->parent_realize(dev, errp);
