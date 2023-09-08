@@ -1721,6 +1721,10 @@ static void riscv_cpu_realize(DeviceState *dev, Error **errp)
         return;
     }
 
+#ifndef CONFIG_USER_ONLY
+    andes_cpu_lm_realize(dev);
+#endif
+
     riscv_cpu_register_gdb_regs_for_features(cs);
 
 #ifndef CONFIG_USER_ONLY
@@ -1730,9 +1734,6 @@ static void riscv_cpu_realize(DeviceState *dev, Error **errp)
 #endif
 
     qemu_init_vcpu(cs);
-#ifndef CONFIG_USER_ONLY
-    andes_cpu_lm_realize(dev);
-#endif
     cpu_reset(cs);
 
     mcc->parent_realize(dev, errp);
