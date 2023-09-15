@@ -1166,6 +1166,8 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
 
 /* Include decoders for factored-out extensions */
 #include "decode-XVentanaCondOps.c.inc"
+
+/* Include AndeStar V5 extensions */
 #include "decode-XAndesV5Ops.c.inc"
 #include "decode-XAndesCodenseOps.c.inc"
 #include "insn_trans/trans_xandesv5ops.c.inc"
