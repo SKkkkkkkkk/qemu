@@ -634,6 +634,10 @@ target_ulong pmp_get_tlb_size(CPURISCVState *env, hwaddr addr)
     hwaddr pmp_ea;
     hwaddr tlb_sa = addr & ~(TARGET_PAGE_SIZE - 1);
     hwaddr tlb_ea = tlb_sa + TARGET_PAGE_SIZE - 1;
+    hwaddr ilm_sa = env->ilm_base;
+    hwaddr ilm_ea = env->ilm_base + env->ilm_size - 1;
+    hwaddr dlm_sa = env->dlm_base;
+    hwaddr dlm_ea = env->dlm_base + env->dlm_size - 1;
     int i;
 
     /*
@@ -671,18 +675,19 @@ target_ulong pmp_get_tlb_size(CPURISCVState *env, hwaddr addr)
         }
     }
 
-    if (env->andes_csr.csrno[CSR_MILMB] & 0x1) {
-        if (env->ilm_base <= tlb_sa &&
-            env->ilm_base + env->ilm_size - 1 >= tlb_ea) {
+    if (env->andes_csr.csrno[CSR_MILMB] & 0x1 ) {
+        if (ilm_sa <= tlb_sa && ilm_ea >= tlb_ea) {
             return TARGET_PAGE_SIZE;
-        } else {
+        } else if ((ilm_sa >= tlb_sa && ilm_sa <= tlb_ea) ||
+                   (ilm_ea >= tlb_sa && ilm_ea <= tlb_ea)) {
             return 1;
         }
-    } else if (env->andes_csr.csrno[CSR_MDLMB] & 0x1) {
-        if (env->dlm_base <= tlb_sa &&
-            env->dlm_base + env->dlm_size - 1 >= tlb_ea) {
-            return  TARGET_PAGE_SIZE;
-        } else {
+    }
+    if (env->andes_csr.csrno[CSR_MDLMB] & 0x1 ) {
+        if (dlm_sa <= tlb_sa && dlm_ea >= tlb_ea) {
+            return TARGET_PAGE_SIZE;
+        } else if ((dlm_sa >= tlb_sa && dlm_sa <= tlb_ea) ||
+                   (dlm_ea >= tlb_sa && dlm_ea <= tlb_ea)) {
             return 1;
         }
     }
