@@ -770,6 +770,10 @@ static void rv64_andes_common_cpu_init(Object *obj, fp_spec_csr_init_fn spec_csr
 
     /* Set vendor ID */
     cfg->mvendorid = 0x0000031e;
+
+    /* inherited from parent obj via riscv_cpu_init() */
+    cfg->ext_ifencei = true;
+    cfg->ext_icsr = true;
 }
 
 static void rv64_andes_ax25_cpu_init(Object *obj)
@@ -1087,6 +1091,10 @@ static void rv32_andes_common_cpu_init(Object *obj, fp_csr_init_fn spec_csr_init
 
     /* Set vendor ID */
     cfg->mvendorid = 0x0000031e;
+
+    /* inherited from parent obj via riscv_cpu_init() */
+    cfg->ext_ifencei = true;
+    cfg->ext_icsr = true;
 }
 
 static void rv32_andes_a25_cpu_init(Object *obj) {
@@ -1133,6 +1141,9 @@ static void rv32_andes_n25_cpu_init(Object *obj)
 
     /* Set CPU ID */
     cfg->marchid = 0x0025;
+
+    /* inherited from parent obj via riscv_cpu_init() */
+    cfg->pmp = true;
 }
 
 static void rv32_andes_n45_cpu_init(Object *obj)
