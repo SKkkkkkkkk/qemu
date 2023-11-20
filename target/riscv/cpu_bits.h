@@ -360,6 +360,8 @@
 #define CSR_TDATA3          0x7a3
 #define CSR_TINFO           0x7a4
 #define CSR_TCONTROL        0x7a5
+#define CSR_SCONTEXT        0x5a8
+#define CSR_HCONTEXT        0x6a8
 #define CSR_MCONTEXT        0x7a8
 
 /* Debug Mode Registers */
@@ -979,6 +981,8 @@ typedef enum RISCVException {
 #define TEXTRA64_SBYTEMASK                 0x000000F000000000ULL
 #define TEXTRA64_SVALUE                    0x00000003FFFFFFFCULL
 #define TEXTRA64_SSELECT                   0x0000000000000003ULL
+#define SCONTEXT32                         0x0000FFFF
+#define SCONTEXT64                         0x00000003FFFFFFFFULL
 #define MCONTEXT32                         0x0000003F
 #define MCONTEXT64                         0x0000000000001FFFULL
 #define MCONTEXT32_HCONTEXT                0x0000007F

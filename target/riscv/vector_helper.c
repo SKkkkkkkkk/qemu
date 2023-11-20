@@ -5587,7 +5587,7 @@ static void
 vext_ldst_int4_stride(void *vd, void *v0, target_ulong base,
                  target_ulong stride, CPURISCVState *env,
                  uint32_t desc, uint32_t vm, uint32_t is_sign,
-                 vext_ldst_elem_fn *ldst_elem,
+                 vext_ldst_elem_fn_tlb *ldst_elem,
                  uint32_t log2_esz, uintptr_t ra)
 {
     uint32_t i, k;
@@ -5656,7 +5656,7 @@ void HELPER(NAME)(void *vd, void *v0, target_ulong base,                \
                           ctzl(sizeof(ETYPE)), GETPC());                \
 }
 
-GEN_VEXT_LD_US_INT4(vln8_v, int8_t, lde_b)
+GEN_VEXT_LD_US_INT4(vln8_v, int8_t, lde_b_tlb)
 
 /* Vector Signed Dot Product on 1/4 of SEW */
 #define OPIVV9(NAME, TD, T1, T2, TX1, TX2, HD, HS1, HS2, OP, OP2)       \
@@ -5708,13 +5708,13 @@ void HELPER(vle4_v)(void *vd, target_ulong base,
     vl = env->vl / 2;
     for (i = 0; i < vl; i++) {
         target_ulong addr = base + i;
-        lde_b(env, adjust_addr(env, addr), i, vd, GETPC());
+        lde_b_tlb(env, adjust_addr(env, addr), i, vd, GETPC());
     }
     /* process last element if vl is an odd number */
     if (vl_is_odd) {
         target_ulong addr = base + vl;
         /* Loads byte memory data into tmp variable */
-        lde_b(env, adjust_addr(env, addr), 0, ptr, GETPC());
+        lde_b_tlb(env, adjust_addr(env, addr), 0, ptr, GETPC());
         uint8_t *cur = ((uint8_t *)vd + H1(vl));
         uint8_t val = (*cur) & 0xf; /* keep bit[0:3] */
         tmp &= 0xf0; /* keep bit[4:7] */

@@ -606,6 +606,46 @@ static RISCVException sdtrig_tcontrol(CPURISCVState *env, int csrno)
 
     return RISCV_EXCP_ILLEGAL_INST;
 }
+
+static RISCVException sdtrig_scontext(CPURISCVState *env, int csrno)
+{
+    if (riscv_cpu_cfg(env)->debug && riscv_cpu_cfg(env)->ext_sdtrig_scontext) {
+        return RISCV_EXCP_NONE;
+    }
+
+    RISCVException ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException sdtrig_hcontext(CPURISCVState *env, int csrno)
+{
+    if (riscv_cpu_cfg(env)->debug && riscv_cpu_cfg(env)->ext_sdtrig_hcontext) {
+        return RISCV_EXCP_NONE;
+    }
+
+    RISCVException ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException sdtrig_mcontext(CPURISCVState *env, int csrno)
+{
+    /* Sdtrig says mcontext must be implemented if hcontext is implemented. */
+    if (riscv_cpu_cfg(env)->debug &&
+        (riscv_cpu_cfg(env)->ext_sdtrig_hcontext ||
+         riscv_cpu_cfg(env)->ext_sdtrig_mcontext)) {
+        return RISCV_EXCP_NONE;
+    }
+
+    return RISCV_EXCP_ILLEGAL_INST;
+}
 #endif
 
 static RISCVException seed(CPURISCVState *env, int csrno)
@@ -4358,10 +4398,70 @@ static RISCVException write_tcontrol(CPURISCVState *env, int csrno,
     return RISCV_EXCP_NONE;
 }
 
+static RISCVException read_scontext(CPURISCVState *env, int csrno,
+                                    target_ulong *val)
+{
+    RISCVException ret;
+
+    ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    *val = env->scontext;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_scontext(CPURISCVState *env, int csrno,
+                                     target_ulong val)
+{
+    RISCVException ret;
+    bool rv32 = riscv_cpu_mxl(env) == MXL_RV32 ? true : false;
+
+    ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    env->scontext = val & (rv32 ? SCONTEXT32 : SCONTEXT64);
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException read_hcontext(CPURISCVState *env, int csrno,
+                                    target_ulong *val)
+{
+    RISCVException ret;
+
+    ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    *val = env->mcontext;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_hcontext(CPURISCVState *env, int csrno,
+                                     target_ulong val)
+{
+    RISCVException ret;
+    bool rv32 = riscv_cpu_mxl(env) == MXL_RV32 ? true : false;
+
+    ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    env->mcontext = val & (rv32 ? MCONTEXT32_HCONTEXT : MCONTEXT64_HCONTEXT);
+    return RISCV_EXCP_NONE;
+}
+
 static RISCVException read_mcontext(CPURISCVState *env, int csrno,
                                     target_ulong *val)
 {
-    *val = env->mcontext;
+    bool rv32 = riscv_cpu_mxl(env) == MXL_RV32 ? true : false;
+
+    *val = env->mcontext & (rv32 ? MCONTEXT32 : MCONTEXT64);
     return RISCV_EXCP_NONE;
 }
 
@@ -4369,17 +4469,8 @@ static RISCVException write_mcontext(CPURISCVState *env, int csrno,
                                      target_ulong val)
 {
     bool rv32 = riscv_cpu_mxl(env) == MXL_RV32 ? true : false;
-    int32_t mask;
 
-    if (riscv_has_ext(env, RVH)) {
-        /* Spec suggest 7-bit for RV32 and 14-bit for RV64 w/ H extension */
-        mask = rv32 ? MCONTEXT32_HCONTEXT : MCONTEXT64_HCONTEXT;
-    } else {
-        /* Spec suggest 6-bit for RV32 and 13-bit for RV64 w/o H extension */
-        mask = rv32 ? MCONTEXT32 : MCONTEXT64;
-    }
-
-    env->mcontext = val & mask;
+    env->mcontext = val & (rv32 ? MCONTEXT32 : MCONTEXT64);
     return RISCV_EXCP_NONE;
 }
 
@@ -5348,7 +5439,12 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
     [CSR_TINFO]     =  { "tinfo",    debug, read_tinfo,    write_ignore  },
     [CSR_TCONTROL]  =  { "tcontrol", sdtrig_tcontrol,      read_tcontrol,
                          write_tcontrol                                  },
-    [CSR_MCONTEXT]  =  { "mcontext", debug, read_mcontext, write_mcontext },
+	[CSR_SCONTEXT]  =  { "scontext", sdtrig_scontext,      read_scontext,
+                         write_scontext                                  },
+    [CSR_HCONTEXT]  =  { "hcontext", sdtrig_hcontext,      read_hcontext,
+                         write_hcontext                                  },
+    [CSR_MCONTEXT]  =  { "mcontext", sdtrig_mcontext,      read_mcontext,
+                         write_mcontext                                  },
 
     /* User Pointer Masking */
     [CSR_UMTE]    =    { "umte",    pointer_masking, read_umte,  write_umte },
