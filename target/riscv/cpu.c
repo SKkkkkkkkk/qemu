@@ -21,6 +21,7 @@
 #include "qemu/qemu-print.h"
 #include "qemu/ctype.h"
 #include "qemu/log.h"
+#include "qemu/main-loop.h"
 #include "cpu.h"
 #include "cpu_vendorid.h"
 #include "internals.h"
@@ -2238,6 +2239,9 @@ const RISCVCPUMultiExtConfig riscv_cpu_extensions[] = {
     MULTI_EXT_CFG_BOOL("zvks", ext_zvks, false),
     MULTI_EXT_CFG_BOOL("zvksc", ext_zvksc, false),
     MULTI_EXT_CFG_BOOL("zvksg", ext_zvksg, false),
+
+    /* Optional CSR of sdtrig extension */
+    MULTI_EXT_CFG_BOOL("sdtrig_tcontrol", ext_sdtrig_tcontrol, false),
 
     DEFINE_PROP_END_OF_LIST(),
 };

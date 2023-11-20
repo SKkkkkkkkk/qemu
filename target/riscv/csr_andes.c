@@ -12,6 +12,7 @@
 #include "exec/cpu_ldst.h"
 #endif
 #include "exec/exec-all.h"
+#include "exec/cpu_ldst.h"
 #include "andes_cpu_bits.h"
 #include "csr_andes.h"
 #include "exec/address-spaces.h"
