@@ -636,6 +636,10 @@ typedef enum {
 #define SATP64_ASID         0x0FFFF00000000000ULL
 #define SATP64_PPN          0x00000FFFFFFFFFFFULL
 
+/* ASIDMAX */
+#define RV32_ASIDMAX        9
+#define RV64_ASIDMAX        16
+
 /* VM modes (satp.mode) privileged ISA 1.10 */
 #define VM_1_10_MBARE       0
 #define VM_1_10_SV32        1
@@ -643,6 +647,20 @@ typedef enum {
 #define VM_1_10_SV48        9
 #define VM_1_10_SV57        10
 #define VM_1_10_SV64        11
+
+/* RV32 hgatp CSR field masks */
+#define HGATP32_MODE        0x80000000
+#define HGATP32_VMID        0x1FC00000
+#define HGATP32_PPN         0x003FFFFF
+
+/* RV64 hgatp CSR field masks */
+#define HGATP64_MODE        0xF000000000000000ULL
+#define HGATP64_VMID        0x03FFF00000000000ULL
+#define HGATP64_PPN         0x00000FFFFFFFFFFFULL
+
+/* VMIDMAX */
+#define RV32_VMIDMAX        7
+#define RV64_VMIDMAX        14
 
 /* Page table entry (PTE) fields */
 #define PTE_V               0x001 /* Valid */
@@ -988,5 +1006,10 @@ typedef enum RISCVException {
 #define TEXTRA64_SBYTEMASK                 0x000001F000000000ULL
 #define TEXTRA64_SVALUE                    0x0000000FFFFFFFFCULL
 #define TEXTRA64_SSELECT                   0x0000000000000003ULL
+
+#define TEXTRA32_SBYTEMASK_LENGTH          2
+#define TEXTRA32_SVALUE_LENGTH             16
+#define TEXTRA64_SBYTEMASK_LENGTH          5
+#define TEXTRA64_SVALUE_LENGTH             34
 #endif
 
