@@ -219,59 +219,83 @@ static inline void warn_always_zero_bit(target_ulong val, target_ulong mask,
 
 static target_ulong textra_validate(CPURISCVState *env, target_ulong tdata3)
 {
-    target_ulong mhvalue, mhselect;
-    target_ulong mhselect_new;
-    target_ulong textra;
-    const uint32_t mhselect_no_rvh[8] = { 0, 0, 0, 0, 4, 4, 4, 4 };
+    target_ulong mhvalue, mhselect, sbytemask, svalue, sselect;
+    target_ulong mhvalue_new, mhselect_new;
+    target_ulong sbytemask_new, svalue_new, sselect_new;
+    target_ulong textra = 0;
 
-    switch (riscv_cpu_mxl(env)) {
-    case MXL_RV32:
-        mhvalue  = get_field(tdata3, TEXTRA32_MHVALUE);
-        mhselect = get_field(tdata3, TEXTRA32_MHSELECT);
-        /* Validate unimplemented (always zero) bits */
-        warn_always_zero_bit(tdata3, (target_ulong)TEXTRA32_SBYTEMASK,
-                             "sbytemask");
-        warn_always_zero_bit(tdata3, (target_ulong)TEXTRA32_SVALUE,
-                             "svalue");
-        warn_always_zero_bit(tdata3, (target_ulong)TEXTRA32_SSELECT,
-                             "sselect");
-        break;
-    case MXL_RV64:
-    case MXL_RV128:
-        mhvalue  = get_field(tdata3, TEXTRA64_MHVALUE);
-        mhselect = get_field(tdata3, TEXTRA64_MHSELECT);
-        /* Validate unimplemented (always zero) bits */
-        warn_always_zero_bit(tdata3, (target_ulong)TEXTRA64_SBYTEMASK,
-                             "sbytemask");
-        warn_always_zero_bit(tdata3, (target_ulong)TEXTRA64_SVALUE,
-                             "svalue");
-        warn_always_zero_bit(tdata3, (target_ulong)TEXTRA64_SSELECT,
-                             "sselect");
-        break;
-    default:
-        g_assert_not_reached();
+    const uint32_t mhselect_if_h[8] = { 0, 1, 2, 0, 4, 5, 6, 4 };
+    const uint32_t mhselect_no_h[8] = { 0, 0, 0, 0, 4, 4, 4, 4 };
+    const uint32_t sselect_if_s[4]  = { 0, 1, 2, 0 };
+
+    if (riscv_cpu_mxl(env) == MXL_RV32) {
+        mhvalue_new   = mhvalue   = extract32(tdata3, 26,  6);
+        mhselect_new  = mhselect  = extract32(tdata3, 23,  3);
+        sbytemask_new = sbytemask = extract32(tdata3, 18,  2);
+        svalue_new    = svalue    = extract32(tdata3,  2, 16);
+        sselect_new   = sselect   = extract32(tdata3,  0,  2);
+    } else {
+        mhvalue_new   = mhvalue   = extract64(tdata3, 51, 13);
+        mhselect_new  = mhselect  = extract64(tdata3, 48,  3);
+        sbytemask_new = sbytemask = extract64(tdata3, 36,  5);
+        svalue_new    = svalue    = extract64(tdata3,  2, 34);
+        sselect_new   = sselect   = extract64(tdata3,  0,  2);
     }
 
-    /* Validate mhselect. */
-    mhselect_new = mhselect_no_rvh[mhselect];
-    if (mhselect != mhselect_new) {
-        qemu_log_mask(LOG_UNIMP, "mhselect only supports 0 or 4 for now\n");
+    /* Validate mhvalue and mhselect. */
+    if (riscv_has_ext(env, RVH)) {
+        mhselect_new = mhselect_if_h[mhselect];
+    } else {
+        mhselect_new = mhselect_no_h[mhselect];
+    }
+
+    if ((mhselect_new == 1 || mhselect_new == 4 || mhselect_new == 5) &&
+        !riscv_cpu_cfg(env)->ext_sdtrig_mcontext) {
+        /* 1, 4, 5 are only illegal when CSR mcontext is implemented. */
+        mhselect_new = 0;
+    }
+
+    if (mhselect_new == 0) {
+        /* Hardwire mhvalue to 0 since mhselect is 0. */
+        mhvalue_new = 0;
+    }
+
+    /* Only set sselect when S-mode is enabled.  */
+    if (riscv_has_ext(env, RVS)) {
+        sselect_new = sselect_if_s[sselect];
+    } else {
+        sselect_new = 0;
+    }
+
+    if ((sselect_new == 1) && !riscv_cpu_cfg(env)->ext_sdtrig_scontext) {
+        /* 1 is only illegal when CSR scontext is implemented. */
+        sselect_new = 0;
+    }
+
+    if (sselect_new == 0) {
+        /* Hardwire svalue to 0 since sselect is 0 */
+        svalue_new = 0;
     }
 
     /* Write legal values into textra */
-    textra = 0;
-    switch (riscv_cpu_mxl(env)) {
-    case MXL_RV32:
-        textra = set_field(textra, TEXTRA32_MHVALUE,  mhvalue);
+    if (riscv_cpu_mxl(env) == MXL_RV32) {
+        textra = set_field(textra, TEXTRA32_MHVALUE, mhvalue_new);
         textra = set_field(textra, TEXTRA32_MHSELECT, mhselect_new);
-        break;
-    case MXL_RV64:
-    case MXL_RV128:
-        textra = set_field(textra, TEXTRA64_MHVALUE,  mhvalue);
+        textra = set_field(textra, TEXTRA32_SBYTEMASK, sbytemask_new);
+        textra = set_field(textra, TEXTRA32_SVALUE, svalue_new);
+        textra = set_field(textra, TEXTRA32_SSELECT, sselect_new);
+    } else {
+        textra = set_field(textra, TEXTRA64_MHVALUE, mhvalue_new);
         textra = set_field(textra, TEXTRA64_MHSELECT, mhselect_new);
-        break;
-    default:
-        g_assert_not_reached();
+        textra = set_field(textra, TEXTRA64_SBYTEMASK, sbytemask_new);
+        textra = set_field(textra, TEXTRA64_SVALUE, svalue_new);
+        textra = set_field(textra, TEXTRA64_SSELECT, sselect_new);
+    }
+
+    if (textra != tdata3) {
+        qemu_log_mask(LOG_GUEST_ERROR,
+                      "different value 0x" TARGET_FMT_lx " write to tdata3\n",
+                      textra);
     }
 
     return textra;
@@ -544,7 +568,10 @@ static void type2_reg_write(CPURISCVState *env, target_ulong index,
         }
         break;
     case TDATA3:
-        env->tdata3[index] = textra_validate(env, val);
+        new_val = textra_validate(env, val);
+        if (new_val != env->tdata3[index]) {
+            env->tdata3[index] = new_val;
+        }
         break;
     default:
         g_assert_not_reached();
@@ -660,7 +687,10 @@ static void type6_reg_write(CPURISCVState *env, target_ulong index,
         }
         break;
     case TDATA3:
-        env->tdata3[index] = textra_validate(env, val);
+        new_val = textra_validate(env, val);
+        if (new_val != env->tdata3[index]) {
+            env->tdata3[index] = new_val;
+        }
         break;
     default:
         g_assert_not_reached();
@@ -842,7 +872,10 @@ static void itrigger_reg_write(CPURISCVState *env, target_ulong index,
                       "tdata2 is not supported for icount trigger\n");
         break;
     case TDATA3:
-        env->tdata3[index] = textra_validate(env, val);
+        new_val = textra_validate(env, val);
+        if (new_val != env->tdata3[index]) {
+            env->tdata3[index] = new_val;
+        }
         break;
     default:
         g_assert_not_reached();

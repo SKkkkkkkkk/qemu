@@ -971,6 +971,13 @@ typedef enum RISCVException {
 #define TCONTROL_MPTE                      BIT(7)
 
 /* Debug Sdtrig CSR masks */
+#define SCONTEXT32                         0x0000FFFF
+#define SCONTEXT64                         0x00000003FFFFFFFFULL
+#define MCONTEXT32                         0x0000003F
+#define MCONTEXT64                         0x0000000000001FFFULL
+#define MCONTEXT32_HCONTEXT                0x0000007F
+#define MCONTEXT64_HCONTEXT                0x0000000000003FFFULL
+
 #define TEXTRA32_MHVALUE                   0xFC000000
 #define TEXTRA32_MHSELECT                  0x03800000
 #define TEXTRA32_SBYTEMASK                 0x000C0000
@@ -978,14 +985,8 @@ typedef enum RISCVException {
 #define TEXTRA32_SSELECT                   0x00000003
 #define TEXTRA64_MHVALUE                   0xFFF8000000000000ULL
 #define TEXTRA64_MHSELECT                  0x0007000000000000ULL
-#define TEXTRA64_SBYTEMASK                 0x000000F000000000ULL
-#define TEXTRA64_SVALUE                    0x00000003FFFFFFFCULL
+#define TEXTRA64_SBYTEMASK                 0x000001F000000000ULL
+#define TEXTRA64_SVALUE                    0x0000000FFFFFFFFCULL
 #define TEXTRA64_SSELECT                   0x0000000000000003ULL
-#define SCONTEXT32                         0x0000FFFF
-#define SCONTEXT64                         0x00000003FFFFFFFFULL
-#define MCONTEXT32                         0x0000003F
-#define MCONTEXT64                         0x0000000000001FFFULL
-#define MCONTEXT32_HCONTEXT                0x0000007F
-#define MCONTEXT64_HCONTEXT                0x0000000000003FFFULL
 #endif
 
