@@ -682,6 +682,9 @@ endif
 
 qemu_common_flags += cc.get_supported_arguments(hardening_flags)
 
+#For Andes ACE support since uses dysyn/dlopen, older gcc needs this flag
+qemu_ldflags += ['-ldl']
+
 add_global_arguments(qemu_common_flags, native: false, language: all_languages)
 add_global_link_arguments(qemu_ldflags, native: false, language: all_languages)
 
