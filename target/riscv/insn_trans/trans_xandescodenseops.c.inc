@@ -11,6 +11,52 @@
                            | (extract32(inst, 12, 8) << 12) \
                            | (extract32(inst, 31, 1) << 20))
 
+/* If require CSR field(s) is not zero, return false */
+#define REQUIRE_CFG_0(CSRNO, CSRFIELD) do {\
+    RISCVException ret; \
+    target_ulong value; \
+    riscv_csr_operations ops; \
+    riscv_get_csr_ops(CSRNO, &ops); \
+    if (ops.read == NULL) { \
+        return false; \
+    } \
+    ret = ops.read(cpu_env(ctx->cs), CSRNO, &value); \
+    if (ret != RISCV_EXCP_NONE) \
+        return false; \
+    if (value & CSRFIELD) \
+        return false; \
+} while (0);
+
+
+/* ECD = 1, ECDV = 0, PP16 = 0 */
+#define REQUIRE_EXECIT do { \
+    REQUIRE_CFG(CSR_MMSC_CFG, MASK_MMSC_CFG_ECD) \
+    if (cpu_env(ctx->cs)->misa_mxl == MXL_RV32) { \
+        REQUIRE_CFG_0(CSR_MMSC_CFG2, MASK_MMSC_CFG2_ECDV) \
+        REQUIRE_CFG_0(CSR_MMSC_CFG2, MASK_MMSC_CFG2_PP16) \
+    } else { \
+        REQUIRE_CFG_0(CSR_MMSC_CFG, MASK_MMSC_CFG_ECDV) \
+        REQUIRE_CFG_0(CSR_MMSC_CFG, MASK_MMSC_CFG_PP16) \
+    } \
+} while (0)
+
+/*
+ * This is assumed that CSR mmsc_cfg.ECDV are set
+ * to non-zero(1,2,3) treat as NEXEC.IT, it may be different
+ * with SPA spec, but should work now
+ * ECD = 1, ECDV = 1, PP16 = 0
+ */
+#define REQUIRE_NEXECIT do { \
+    REQUIRE_CFG(CSR_MMSC_CFG, MASK_MMSC_CFG_ECD) \
+    if (cpu_env(ctx->cs)->misa_mxl == MXL_RV32) { \
+        REQUIRE_CFG(CSR_MMSC_CFG2, MASK_MMSC_CFG2_ECDV) \
+        REQUIRE_CFG_0(CSR_MMSC_CFG2, MASK_MMSC_CFG2_PP16) \
+    } else { \
+        REQUIRE_CFG(CSR_MMSC_CFG, MASK_MMSC_CFG_ECDV) \
+        REQUIRE_CFG_0(CSR_MMSC_CFG, MASK_MMSC_CFG_PP16) \
+    } \
+} while (0)
+
 extern const RISCVDecoder16 decoder16_table[];
 extern const size_t decoder16_table_size;
 
@@ -91,6 +137,15 @@ static int andes_v5_gen_codense_exec_it(DisasContext *ctx,
 
 static bool trans_execit(DisasContext *ctx, arg_execit *a)
 {
+    REQUIRE_EXECIT;
     andes_v5_gen_codense_exec_it(ctx, a);
+    return true;
+}
+
+static bool trans_nexecit(DisasContext *ctx, arg_nexecit *a)
+{
+    REQUIRE_NEXECIT;
+    /* type casting arg_nexecit to arg_execit since they will be the same */
+    andes_v5_gen_codense_exec_it(ctx, (arg_execit *)a);
     return true;
 }
