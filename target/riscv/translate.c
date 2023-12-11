@@ -389,6 +389,12 @@ static TCGv dest_gprh(DisasContext *ctx, int reg_num)
 
 static void gen_set_gpr(DisasContext *ctx, int reg_num, TCGv t)
 {
+    if (ctx->cfg_ptr->ext_XAndesV5Ops == true) {
+        if (reg_num == xSP) {
+            gen_helper_andes_v5_hsp_check(tcg_env, t);
+        }
+    }
+
     if (reg_num != 0) {
         switch (get_ol(ctx)) {
         case MXL_RV32:
@@ -410,6 +416,12 @@ static void gen_set_gpr(DisasContext *ctx, int reg_num, TCGv t)
 
 static void gen_set_gpri(DisasContext *ctx, int reg_num, target_long imm)
 {
+    if (ctx->cfg_ptr->ext_XAndesV5Ops == true) {
+        if (reg_num == xSP) {
+            gen_helper_andes_v5_hsp_check(tcg_env, tcg_constant_tl(imm));
+        }
+    }
+
     if (reg_num != 0) {
         switch (get_ol(ctx)) {
         case MXL_RV32:
