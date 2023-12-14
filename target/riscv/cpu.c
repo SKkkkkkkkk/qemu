@@ -1408,7 +1408,6 @@ static int riscv_cpu_mmu_index(CPUState *cs, bool ifetch)
     return riscv_env_mmu_index(cpu_env(cs), ifetch);
 }
 
-#ifndef CONFIG_USER_ONLY
 static void andes_csr_reset_common(CPURISCVState *env)
 {
     env->andes_csr.csrno[CSR_MXSTATUS] = 0;
@@ -1421,7 +1420,9 @@ static void andes_csr_reset_common(CPURISCVState *env)
     env->andes_csr.csrno[CSR_FCSR] = 0;
     env->andes_csr.csrno[CSR_SCAUSE] = 0;
     env->andes_csr.csrno[CSR_UCAUSE] = 0;
+#ifndef CONFIG_USER_ONLY
     env->andes_csr.csrno[CSR_MNVEC] = env->resetvec;
+#endif
 
     env->andes_csr.csrno[CSR_UITB] = 0;
     env->andes_csr.csrno[CSR_MMSC_CFG] = (1UL << V5_MMSC_CFG_ECD) |
@@ -1441,6 +1442,7 @@ static void andes_csr_reset_common(CPURISCVState *env)
     env->andes_csr.csrno[CSR_MICM_CFG] = (3 << V5_MICM_CFG_ISZ);
     env->andes_csr.csrno[CSR_MDCM_CFG] = (3 << V5_MDCM_CFG_DSZ);
 
+#ifndef CONFIG_USER_ONLY
     /* initial local memory csr */
     int ilmsz = 31 - __builtin_clz(env->ilm_size) - 9;
     int dlmsz = 31 - __builtin_clz(env->dlm_size) - 9;
@@ -1454,6 +1456,7 @@ static void andes_csr_reset_common(CPURISCVState *env)
 
     env->andes_csr.csrno[CSR_MILMB] = env->ilm_base | env->ilm_default_enable;
     env->andes_csr.csrno[CSR_MDLMB] = env->dlm_base | env->dlm_default_enable;
+#endif
 
     /* all-one reset value */
     env->andes_csr.csrno[CSR_MSP_BOUND] = ~((target_ulong)0);
@@ -1549,9 +1552,6 @@ static void andes_csr_sync_cpu_ext(CPURISCVState *env, RISCVCPU *cpu)
     }
 }
 
-static bool is_andes_riscv_cpu_type(Object *obj);
-#endif
-
 static void riscv_cpu_reset_hold(Object *obj, ResetType type)
 {
 #ifndef CONFIG_USER_ONLY
@@ -1566,11 +1566,11 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
     if (mcc->parent_phases.hold) {
         mcc->parent_phases.hold(obj, type);
     }
-#ifndef CONFIG_USER_ONLY
     if (is_andes_riscv_cpu_type(obj)) {
         andes_csr_reset_common(env);
         andes_csr_sync_cpu_ext(env, cpu);
     }
+#ifndef CONFIG_USER_ONLY
     env->misa_mxl = mcc->misa_mxl_max;
     env->priv = PRV_M;
     env->mstatus &= ~(MSTATUS_MIE | MSTATUS_MPRV);
@@ -3730,8 +3730,7 @@ static const TypeInfo riscv_cpu_type_infos[] = {
 #endif /* TARGET_RISCV64 */
 };
 
-#ifndef CONFIG_USER_ONLY
-static bool is_andes_riscv_cpu_type(Object *obj)
+bool is_andes_riscv_cpu_type(Object *obj)
 {
     size_t size = ARRAY_SIZE(riscv_cpu_type_infos);
     for (int i = 0; i < size; i++) {
@@ -3743,7 +3742,6 @@ static bool is_andes_riscv_cpu_type(Object *obj)
     }
     return false;
 }
-#endif
 
 DEFINE_TYPES(riscv_cpu_type_infos)
 
