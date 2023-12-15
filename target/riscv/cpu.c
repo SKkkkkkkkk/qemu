@@ -740,6 +740,7 @@ static void rv128_base_cpu_init(Object *obj)
 #endif /* CONFIG_TCG */
 
 static void rv64_andes_common_cpu_init(Object *obj,
+                                       uint8_t satp_mode,
                                        fp_spec_csr_init_fn spec_csr_init)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
@@ -752,7 +753,8 @@ static void rv64_andes_common_cpu_init(Object *obj,
     register_andes_cpu_props(obj);
     env->priv_ver = PRIV_VERSION_1_12_0;
 #ifndef CONFIG_USER_ONLY
-    set_satp_mode_max_supported(RISCV_CPU(obj), VM_1_10_SV48);
+    memset(&cfg->satp_mode, 0, sizeof(RISCVSATPMap));
+    set_satp_mode_max_supported(RISCV_CPU(obj), satp_mode);
 #endif
 
     /* Setup Andes Custom CSR */
@@ -787,7 +789,7 @@ static void rv64_andes_ax25_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
 
-    rv64_andes_common_cpu_init(obj, NULL);
+    rv64_andes_common_cpu_init(obj, VM_1_10_SV48, NULL);
 
     /* Set CPU ID */
     cfg->marchid = 0x8a25;
@@ -797,7 +799,7 @@ static void rv64_andes_ax27_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
 
-    rv64_andes_common_cpu_init(obj, NULL);
+    rv64_andes_common_cpu_init(obj, VM_1_10_SV48, NULL);
 
     /* Set CPU ID */
     cfg->marchid = 0x8a27;
@@ -807,7 +809,7 @@ static void rv64_andes_ax45_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
 
-    rv64_andes_common_cpu_init(obj, andes_set_mmsc_cfg_l2c);
+    rv64_andes_common_cpu_init(obj, VM_1_10_SV48, andes_set_mmsc_cfg_l2c);
 
     /* Set CPU ID */
     cfg->marchid = 0x8a45;
@@ -820,7 +822,7 @@ static void rv64_andes_ax45mpv_cpu_init(Object *obj)
 
     riscv_cpu_set_misa_ext(
             env, RVI | RVM | RVA | RVF | RVD | RVC | RVS | RVU | RVV | RVX);
-    rv64_andes_common_cpu_init(obj, andes_set_mmsc_cfg_l2c);
+    rv64_andes_common_cpu_init(obj, VM_1_10_SV48, andes_set_mmsc_cfg_l2c);
 
     /* Set CPU ID */
     cfg->marchid = 0x8a45;
@@ -841,7 +843,7 @@ static void rv64_andes_ax65_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
 
-    rv64_andes_common_cpu_init(obj, andes_set_mmsc_cfg_l2c);
+    rv64_andes_common_cpu_init(obj, VM_1_10_SV48, andes_set_mmsc_cfg_l2c);
 
     /* Set CPU ID */
     cfg->marchid = 0x8a65;
@@ -889,12 +891,8 @@ static void rv64_andes_nx25_cpu_init(Object *obj)
 
     riscv_cpu_set_misa_ext(
             env, RVI | RVM | RVA | RVF | RVD | RVC | RVU | RVX);
-    rv64_andes_common_cpu_init(obj, NULL);
+    rv64_andes_common_cpu_init(obj, VM_1_10_MBARE, NULL);
     cfg->mmu = false;
-#ifndef CONFIG_USER_ONLY
-    memset(&cfg->satp_mode, 0, sizeof(RISCVSATPMap));
-    set_satp_mode_max_supported(RISCV_CPU(obj), VM_1_10_MBARE);
-#endif
 
     /* Set CPU ID */
     cfg->marchid = 0x8025;
@@ -907,12 +905,8 @@ static void rv64_andes_nx27v_cpu_init(Object *obj)
 
     riscv_cpu_set_misa_ext(
             env, RVI | RVM | RVA | RVF | RVD | RVC | RVU | RVV | RVX);
-    rv64_andes_common_cpu_init(obj, NULL);
+    rv64_andes_common_cpu_init(obj, VM_1_10_MBARE, NULL);
     cfg->mmu = false;
-#ifndef CONFIG_USER_ONLY
-    memset(&cfg->satp_mode, 0, sizeof(RISCVSATPMap));
-    set_satp_mode_max_supported(RISCV_CPU(obj), VM_1_10_MBARE);
-#endif
 
     /* RVV extension */
     cfg->vlenb = 512;
@@ -929,12 +923,8 @@ static void rv64_andes_nx45_cpu_init(Object *obj)
 
     riscv_cpu_set_misa_ext(
             env, RVI | RVM | RVA | RVF | RVD | RVC | RVU | RVX);
-    rv64_andes_common_cpu_init(obj, NULL);
+    rv64_andes_common_cpu_init(obj, VM_1_10_MBARE, NULL);
     cfg->mmu = false;
-#ifndef CONFIG_USER_ONLY
-    memset(&cfg->satp_mode, 0, sizeof(RISCVSATPMap));
-    set_satp_mode_max_supported(RISCV_CPU(obj), VM_1_10_MBARE);
-#endif
 
     /* Set CPU ID */
     cfg->marchid = 0x8045;
@@ -947,12 +937,8 @@ static void rv64_andes_nx45v_cpu_init(Object *obj)
 
     riscv_cpu_set_misa_ext(
             env, RVA | RVC | RVD | RVF | RVI | RVM | RVN | RVU | RVV | RVX);
-    rv64_andes_common_cpu_init(obj, andes_spec_csr_init_nx45v);
+    rv64_andes_common_cpu_init(obj, VM_1_10_MBARE, andes_spec_csr_init_nx45v);
     cfg->mmu = false;
-#ifndef CONFIG_USER_ONLY
-    memset(&cfg->satp_mode, 0, sizeof(RISCVSATPMap));
-    set_satp_mode_max_supported(RISCV_CPU(obj), VM_1_10_MBARE);
-#endif
 
     /* Set CPU extensions */
     cfg->ext_zfh = true;
@@ -1075,6 +1061,7 @@ static void rv32_imafcu_nommu_cpu_init(Object *obj)
 typedef void (*fp_csr_init_fn)(AndesCsr *);
 
 static void rv32_andes_common_cpu_init(Object *obj,
+                                       uint8_t satp_mode,
                                        fp_csr_init_fn spec_csr_init)
 {
     CPURISCVState *env = &RISCV_CPU(obj)->env;
@@ -1087,7 +1074,8 @@ static void rv32_andes_common_cpu_init(Object *obj,
     register_andes_cpu_props(obj);
     env->priv_ver = PRIV_VERSION_1_12_0;
 #ifndef CONFIG_USER_ONLY
-    set_satp_mode_max_supported(RISCV_CPU(obj), VM_1_10_SV32);
+    memset(&cfg->satp_mode, 0, sizeof(RISCVSATPMap));
+    set_satp_mode_max_supported(RISCV_CPU(obj), satp_mode);
 #endif
 
     /* Setup Andes Custom CSR */
@@ -1122,7 +1110,7 @@ static void rv32_andes_a25_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
 
-    rv32_andes_common_cpu_init(obj, NULL);
+    rv32_andes_common_cpu_init(obj, VM_1_10_SV32, NULL);
 
     /* Set CPU ID */
     cfg->marchid = 0x0a25;
@@ -1132,7 +1120,7 @@ static void rv32_andes_a27_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
 
-    rv32_andes_common_cpu_init(obj, NULL);
+    rv32_andes_common_cpu_init(obj, VM_1_10_SV32, NULL);
 
     /* Set CPU ID */
     cfg->marchid = 0x0a27;
@@ -1142,10 +1130,35 @@ static void rv32_andes_a45_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
 
-    rv32_andes_common_cpu_init(obj, andes_set_mmsc_cfg_l2c);
+    rv32_andes_common_cpu_init(obj, VM_1_10_SV32, andes_set_mmsc_cfg_l2c);
 
     /* Set CPU ID */
     cfg->marchid = 0x0a45;
+}
+
+static void rv32_andes_d23_cpu_init(Object *obj)
+{
+    RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
+    CPURISCVState *env = &RISCV_CPU(obj)->env;
+
+    riscv_cpu_set_misa_ext(
+            env, RVI | RVM | RVA | RVC | RVS | RVU | RVX);
+    rv32_andes_common_cpu_init(obj, VM_1_10_MBARE, andes_set_mmsc_cfg_l2c);
+
+    /* Set CPU ID */
+    cfg->marchid = 0x00023;
+
+    /* Scalar crypto */
+    cfg->ext_zk  = true;
+    cfg->ext_zks = true;
+
+    /* Debug sdtrig extension optional CSR */
+    cfg->ext_sdtrig_tcontrol = true;
+    cfg->ext_sdtrig_mcontext = true;
+
+    /* smePMP */
+    cfg->pmp = true;
+    cfg->ext_smepmp = true;
 }
 
 static void rv32_andes_n25_cpu_init(Object *obj)
@@ -1155,12 +1168,8 @@ static void rv32_andes_n25_cpu_init(Object *obj)
 
     riscv_cpu_set_misa_ext(
             env, RVI | RVM | RVA | RVF | RVD | RVC | RVU | RVX);
-    rv32_andes_common_cpu_init(obj, NULL);
+    rv32_andes_common_cpu_init(obj, VM_1_10_MBARE, NULL);
     cfg->mmu = false;
-#ifndef CONFIG_USER_ONLY
-    memset(&cfg->satp_mode, 0, sizeof(RISCVSATPMap));
-    set_satp_mode_max_supported(RISCV_CPU(obj), VM_1_10_MBARE);
-#endif
 
     /* Set CPU ID */
     cfg->marchid = 0x0025;
@@ -1189,12 +1198,8 @@ static void rv32_andes_n45_cpu_init(Object *obj)
 
     riscv_cpu_set_misa_ext(
             env, RVI | RVM | RVA | RVF | RVD | RVC | RVU | RVX);
-    rv32_andes_common_cpu_init(obj, NULL);
+    rv32_andes_common_cpu_init(obj, VM_1_10_SV32, NULL);
     cfg->mmu = false;
-#ifndef CONFIG_USER_ONLY
-    memset(&cfg->satp_mode, 0, sizeof(RISCVSATPMap));
-    set_satp_mode_max_supported(RISCV_CPU(obj), VM_1_10_MBARE);
-#endif
 
     /* Set CPU ID */
     cfg->marchid = 0x0045;
@@ -3709,6 +3714,7 @@ static const TypeInfo riscv_cpu_type_infos[] = {
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A25,      MXL_RV32,  rv32_andes_a25_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A27,      MXL_RV32,  rv32_andes_a27_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A45,      MXL_RV32,  rv32_andes_a45_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D23,      MXL_RV32,  rv32_andes_d23_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N25,      MXL_RV32,  rv32_andes_n25_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N45,      MXL_RV32,  rv32_andes_n45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_IBEX,           MXL_RV32,  rv32_ibex_cpu_init),
