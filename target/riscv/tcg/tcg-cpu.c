@@ -771,7 +771,8 @@ static void riscv_cpu_validate_andes_ace(RISCVCPU *cpu, Error **errp)
         return;
     }
 
-    /* cfg.ext_XAndesAce is true, cfg.XAndesAceLib cannot
+    /*
+     * cfg.ext_XAndesAce is true, cfg.XAndesAceLib cannot
      * be NULL since above check already
      */
     if (cpu->cfg.ext_XAndesAce) {
@@ -1040,7 +1041,7 @@ static bool riscv_tcg_cpu_realize(CPUState *cs, Error **errp)
             return false;
         }
 
-        if (cpu->cfg.ext_sscofpmf) {
+        if (cpu->cfg.ext_sscofpmf || cpu->cfg.ext_XAndesV5Ops) {
             cpu->pmu_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL,
                                           riscv_pmu_timer_cb, cpu);
         }
