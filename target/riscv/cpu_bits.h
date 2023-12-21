@@ -930,6 +930,7 @@ typedef enum RISCVException {
 #define SEED_OPST_DEAD                   (0b11 << 30)
 /* PMU related bits */
 #define MIE_LCOFIE                         (1 << IRQ_PMU_OVF)
+#define SIE_LCOFIE                         (1 << IRQ_PMU_OVF)
 
 #define MCYCLECFG_BIT_MINH                 BIT_ULL(62)
 #define MCYCLECFGH_BIT_MINH                BIT(30)
