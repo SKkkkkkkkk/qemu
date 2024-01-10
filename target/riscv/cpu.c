@@ -3450,15 +3450,10 @@ static Property riscv_cpu_properties[] = {
 };
 
 static Property andes_cpu_property[] = {
-    /* Defaults for standard extensions */
-    DEFINE_PROP_UINT64("ilm_base", RISCVCPU, env.ilm_base, 0),
-    DEFINE_PROP_UINT64("dlm_base", RISCVCPU, env.dlm_base, 0x200000),
-    DEFINE_PROP_UINT32("ilm_size", RISCVCPU, env.ilm_size, 0x200000),
-    DEFINE_PROP_UINT32("dlm_size", RISCVCPU, env.dlm_size, 0x200000),
-    DEFINE_PROP_BOOL("ilm_default_enable", RISCVCPU, env.ilm_default_enable,
-                     false),
-    DEFINE_PROP_BOOL("dlm_default_enable", RISCVCPU, env.dlm_default_enable,
-                     false),
+    DEFINE_PROP_STRING("xandesacelib", RISCVCPU, cfg.XAndesAceLib),
+    DEFINE_PROP_STRING("xandesaceextlibpath", RISCVCPU,
+                       cfg.XAndesAceExtLibPath),
+    DEFINE_PROP_STRING("xandesacelibdbg", RISCVCPU, cfg.XAndesAceLibDbg),
     DEFINE_PROP_END_OF_LIST(),
 };
 
