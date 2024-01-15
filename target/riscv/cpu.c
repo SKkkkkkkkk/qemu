@@ -843,6 +843,9 @@ static void rv64_andes_ax45mpv_cpu_init(Object *obj)
     env->vext_ver = VEXT_VERSION_1_00_0;
     cfg->vlenb = 1024;
     cfg->elen  = 64;
+
+    cfg->ext_zfh = true;
+    env->andes_csr.csrno[CSR_MMSC_CFG] = 0x801079174005b038;
 }
 
 static void rv64_andes_ax65_cpu_init(Object *obj)
