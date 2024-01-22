@@ -761,6 +761,7 @@ static void riscv_cpu_validate_profiles(RISCVCPU *cpu)
 
 /* Andes ACE */
 #include "andes_ace_helper.h"
+#include "gdbstub/andes_ace_gdb.h"
 static void riscv_cpu_validate_andes_ace(RISCVCPU *cpu, Error **errp)
 {
     CPURISCVState *env = &cpu->env;
@@ -792,6 +793,13 @@ static void riscv_cpu_validate_andes_ace(RISCVCPU *cpu, Error **errp)
                                     hartid, cpu->cfg.ext_XAndesAceMulti)) {
                 error_setg(errp, "xandesacelib '%s' register failed",
                            cpu->cfg.XAndesAceLib);
+                return;
+            }
+        }
+        if (cpu->cfg.XAndesAceLibDbg != NULL) {
+            if (gdb_ace_load_lib(cpu->cfg.XAndesAceLibDbg)) {
+                error_setg(errp, "xandesacelibdbg '%s' load/register failed",
+                           cpu->cfg.XAndesAceLibDbg);
                 return;
             }
         }
