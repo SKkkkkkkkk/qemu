@@ -2017,8 +2017,8 @@ void riscv_cpu_do_interrupt(CPUState *cs)
                   __func__, env->mhartid, async, cause, env->pc, tval,
                   riscv_cpu_get_trap_name(cause, async));
 
-    if (env->priv <= PRV_S && cause < 64 &&
-        (((deleg >> cause) & 1) || s_injected || vs_injected || andes_lideleg)) {
+    if (env->priv <= PRV_S && cause < 64 && (((deleg >> cause) & 1) ||
+        s_injected || vs_injected || andes_lideleg)) {
         /* handle the trap in S-mode */
         /* save elp status */
         if (cpu_get_fcfien(env)) {

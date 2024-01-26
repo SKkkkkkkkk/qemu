@@ -5455,7 +5455,7 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
     [CSR_TINFO]     =  { "tinfo",    debug, read_tinfo,    write_ignore  },
     [CSR_TCONTROL]  =  { "tcontrol", sdtrig_tcontrol,      read_tcontrol,
                          write_tcontrol                                  },
-	[CSR_SCONTEXT]  =  { "scontext", sdtrig_scontext,      read_scontext,
+    [CSR_SCONTEXT]  =  { "scontext", sdtrig_scontext,      read_scontext,
                          write_scontext                                  },
     [CSR_HCONTEXT]  =  { "hcontext", sdtrig_hcontext,      read_hcontext,
                          write_hcontext                                  },
