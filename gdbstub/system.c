@@ -537,7 +537,7 @@ void gdb_handle_query_rcmd(GArray *params, void *ctx)
     gdb_hextomem(gdbserver_state.mem_buf, gdb_get_cmd_param(params, 0)->data, len);
     g_byte_array_append(gdbserver_state.mem_buf, &zero, 1);
     /* process 'nds xxx' commands */
-    if (gdb_handle_query_rcmd_nds_query(params, ctx) == 0) {
+    if (gdb_handle_query_rcmd_andes_query(params, ctx) == 0) {
         return;
     }
     qemu_chr_be_write(gdbserver_system_state.mon_chr,

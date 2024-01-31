@@ -46,6 +46,9 @@ typedef struct CPUArchState CPURISCVState;
 /* Vendor CSR declaration */
 #include "csr_andes.h"
 
+/* Andes ACE helper */
+#include "ace-helper.h"
+
 /*
  * RISC-V-specific extra insn start words:
  * 1: Original instruction opcode
@@ -502,6 +505,10 @@ struct CPUArchState {
     /* Andes vectored-plic */
     AndesVec andes_vec;
     void (*do_interrupt_post)(CPUState *cpu);
+
+    /* Andes ACE agent symbols */
+    AceAgentReg ace_agent_register;
+    AceAgentRunInsn ace_agent_run_insn;
 
 #ifndef CONFIG_USER_ONLY
     MemoryRegion *cpu_as_root;
