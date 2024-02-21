@@ -1482,7 +1482,7 @@ static int gdb_vfile_packet(const char *packet, int packet_size)
         if (*(parse++) != ',') {
             return -1;
         }
-        ret = qemu_strtoui(parse, &parse, 16, &mode);
+        ret = qemu_strtoui(parse, &parse, 16, (unsigned int *)&mode);
         if (ret < 0) {
             return -1;
         }
@@ -1572,8 +1572,14 @@ static int gdb_vfile_packet(const char *packet, int packet_size)
             return -1;
         }
 
+#ifndef WIN32
         ret = pread(fd, read_buffer, count, offset);
-
+#else
+        ret = lseek(fd, offset, SEEK_SET);
+        if (ret != -1) {
+            ret = read(fd, read_buffer, count);
+	}
+#endif
         if (ret == -1) {
             snprintf(reply, 16, "F-1,%x", errno);
             gdb_put_packet(reply);
