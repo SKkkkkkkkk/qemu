@@ -799,7 +799,7 @@ static void rv64_andes_ax25_cpu_init(Object *obj)
     rv64_andes_common_cpu_init(obj, VM_1_10_SV48, NULL);
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 63) | 0x8a25;
+    cfg->marchid = ANDES_CPUID_AX25;
 
     /* CSR_MMSC_CFG = 0x1000002007b038 */
     env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECD) |
@@ -829,7 +829,7 @@ static void rv64_andes_ax27_cpu_init(Object *obj)
     rv64_andes_common_cpu_init(obj, VM_1_10_SV48, NULL);
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 63) | 0x8a27;
+    cfg->marchid = ANDES_CPUID_AX27;
 
     /* CSR_MMSC_CFG = 0x6007f038 */
     env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECD) |
@@ -854,7 +854,7 @@ static void rv64_andes_ax45_cpu_init(Object *obj)
     rv64_andes_common_cpu_init(obj, VM_1_10_SV48, andes_set_mmsc_cfg_l2c);
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 63) | 0x8a45;
+    cfg->marchid = ANDES_CPUID_AX45;
 
     /* CSR_MMSC_CFG = 0x2000236005f03d */
     cfg-> ext_zfh = true;
@@ -887,7 +887,7 @@ static void rv64_andes_ax45mpv_cpu_init(Object *obj)
     rv64_andes_common_cpu_init(obj, VM_1_10_SV48, andes_set_mmsc_cfg_l2c);
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 63) | 0x8a45;
+    cfg->marchid = ANDES_CPUID_AX45;
 
     /* Bitmanip */
     cfg->ext_zba = true;
@@ -932,7 +932,7 @@ static void rv64_andes_ax65_cpu_init(Object *obj)
     rv64_andes_common_cpu_init(obj, VM_1_10_SV48, andes_set_mmsc_cfg_l2c);
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 63) | 0x8a65;
+    cfg->marchid = ANDES_CPUID_AX65;
 
     /* Bitmanip */
     cfg->ext_zba = true;
@@ -997,7 +997,7 @@ static void rv64_andes_nx25_cpu_init(Object *obj)
     cfg->mmu = false;
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 63) | 0x8025;
+    cfg->marchid = ANDES_CPUID_NX25;
 }
 
 static void rv64_andes_nx27v_cpu_init(Object *obj)
@@ -1015,7 +1015,7 @@ static void rv64_andes_nx27v_cpu_init(Object *obj)
     cfg->elen = 64;
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 63) | 0x8027;
+    cfg->marchid = ANDES_CPUID_NX27V;
 }
 
 static void rv64_andes_nx45_cpu_init(Object *obj)
@@ -1029,7 +1029,7 @@ static void rv64_andes_nx45_cpu_init(Object *obj)
     cfg->mmu = false;
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 63) | 0x8045;
+    cfg->marchid = ANDES_CPUID_NX45;
 }
 
 static void rv64_andes_nx45v_cpu_init(Object *obj)
@@ -1051,7 +1051,7 @@ static void rv64_andes_nx45v_cpu_init(Object *obj)
     cfg->elen = 64;
 
     /* Set CPU ID & Implementation ID */
-    cfg->marchid = (1ULL << 63) | 0x8045;
+    cfg->marchid = ANDES_CPUID_NX45;
     cfg->mimpid = 0x1;
 }
 
@@ -1216,7 +1216,7 @@ static void rv32_andes_a25_cpu_init(Object *obj)
     rv32_andes_common_cpu_init(obj, VM_1_10_SV32, NULL);
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 31) | 0x0a25;
+    cfg->marchid = ANDES_CPUID_A25;
 
     /* CSR_MMSC_CFG = 0xa007b038 */
     env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECD) |
@@ -1246,7 +1246,7 @@ static void rv32_andes_a27_cpu_init(Object *obj)
     rv32_andes_common_cpu_init(obj, VM_1_10_SV32, NULL);
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 31) | 0x0a27;
+    cfg->marchid = ANDES_CPUID_A27;
 
     /* CSR_MMSC_CFG = 0xe007f038 */
     env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECD) |
@@ -1272,7 +1272,7 @@ static void rv32_andes_a45_cpu_init(Object *obj)
     rv32_andes_common_cpu_init(obj, VM_1_10_SV32, andes_set_mmsc_cfg_l2c);
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 31) | 0x0a45;
+    cfg->marchid = ANDES_CPUID_A45;
 
     /* CSR_MMSC_CFG = 0xe005f039 */
     env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
@@ -1300,7 +1300,7 @@ static void rv32_andes_d23_cpu_init(Object *obj)
     rv32_andes_common_cpu_init(obj, VM_1_10_MBARE, andes_set_mmsc_cfg_l2c);
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 31) | 0x0023;
+    cfg->marchid = ANDES_CPUID_D23;
 
     /* Scalar crypto */
     cfg->ext_zk  = true;
@@ -1326,7 +1326,7 @@ static void rv32_andes_n25_cpu_init(Object *obj)
     cfg->mmu = false;
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 31) | 0x0025;
+    cfg->marchid = ANDES_CPUID_N25;
 
     /* inherited from parent obj via riscv_cpu_init() */
     cfg->pmp = true;
@@ -1356,7 +1356,7 @@ static void rv32_andes_n45_cpu_init(Object *obj)
     cfg->mmu = false;
 
     /* Set CPU ID */
-    cfg->marchid = (1ULL << 31) | 0x0045;
+    cfg->marchid = ANDES_CPUID_N45;
 }
 
 static void rv32i_bare_cpu_init(Object *obj)
