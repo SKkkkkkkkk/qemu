@@ -1152,6 +1152,8 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
 #include "insn_trans/trans_rvf.c.inc"
 #include "insn_trans/trans_rvd.c.inc"
 #include "insn_trans/trans_rvh.c.inc"
+#include "decode-insn32_rvp.c.inc"
+#include "insn_trans/trans_rvp.c.inc"
 #include "insn_trans/trans_rvv.c.inc"
 #include "insn_trans/trans_rvb.c.inc"
 #include "insn_trans/trans_rvzicond.c.inc"
@@ -1198,6 +1200,7 @@ static inline int insn_len(uint16_t first_word)
 
 const RISCVDecoder decoder_table[] = {
     { always_true_p, decode_insn32 },
+    { has_no_zvknh_p, decode_insn32_rvp},
     { has_xthead_p, decode_xthead},
     { has_XVentanaCondOps_p, decode_XVentanaCodeOps},
     { has_XAndesV5Ops_p,  decode_XAndesV5Ops },
@@ -1206,6 +1209,15 @@ const RISCVDecoder decoder_table[] = {
 
 const RISCVDecoder16 decoder16_table[] = {
     { always_true_p,  decode_insn16 },
+    /*
+     * Codense V2 should decode before legacy Codense,
+     * Since legacy codense opcode conflics with zcb extension,
+     * But codense v2 can be compatiable with zcb, so user can
+     * turn on zcb and Andes codense(V2) together, or turn off
+     * zcb but turn on Andes codense(Legacy).
+     * translatation function will extension configuration whether
+     * is turn on by checking ext_zb and/or Andes relative CSRs bits
+     */
     { has_XAndesCodenseOps_p, decode_XAndesCodenseOps },
 };
 

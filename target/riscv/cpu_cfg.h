@@ -131,6 +131,7 @@ struct RISCVCPUConfig {
     bool rvv_ta_all_1s;
     bool rvv_ma_all_1s;
     bool rvv_vl_half_avl;
+    bool ext_psfoperand;
 
     uint32_t mvendorid;
     uint64_t marchid;
@@ -172,6 +173,7 @@ struct RISCVCPUConfig {
     char *user_spec;
     char *bext_spec;
     char *vext_spec;
+    char *pext_spec;
     char *XAndesAceLib;
     char *XAndesAceExtLibPath;
     char *XAndesAceLibDbg;
@@ -206,6 +208,11 @@ static inline bool always_true_p(const RISCVCPUConfig *cfg __attribute__((__unus
     return true;
 }
 
+static inline bool has_no_zvknh_p(const RISCVCPUConfig *cfg)
+{
+    return !(cfg->ext_zvknha || cfg->ext_zvknhb);
+}
+
 static inline bool has_xthead_p(const RISCVCPUConfig *cfg)
 {
     return cfg->ext_xtheadba || cfg->ext_xtheadbb ||
@@ -237,5 +244,6 @@ MATERIALISE_EXT_PREDICATE(XVentanaCondOps)
 MATERIALISE_EXT_PREDICATE(XAndesV5Ops);
 MATERIALISE_EXT_PREDICATE(XAndesAce);
 MATERIALISE_EXT_PREDICATE(XAndesCodenseOps);
+MATERIALISE_EXT_PREDICATE(psfoperand);
 
 #endif
