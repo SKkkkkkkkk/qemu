@@ -2869,6 +2869,37 @@ static const PropertyInfo prop_vext_spec = {
     .set = prop_vext_spec_set,
 };
 
+static void prop_pext_spec_set(Object *obj, Visitor *v, const char *name,
+                               void *opaque, Error **errp)
+{
+    RISCVCPU *cpu = RISCV_CPU(obj);
+    g_autofree char *value = NULL;
+
+    visit_type_str(v, name, &value, errp);
+
+    if (g_strcmp0(value, PEXT_VER_0_05_2_STR) != 0) {
+        error_setg(errp, "Unsupported packed spec version '%s'", value);
+        return;
+    }
+
+    cpu_option_add_user_setting(name, PEXT_VERSION_0_05_2);
+    cpu->env.pext_ver = PEXT_VERSION_0_05_2;
+}
+
+static void prop_pext_spec_get(Object *obj, Visitor *v, const char *name,
+                               void *opaque, Error **errp)
+{
+    const char *value = PEXT_VER_0_05_2_STR;
+
+    visit_type_str(v, name, (char **)&value, errp);
+}
+
+static const PropertyInfo prop_pext_spec = {
+    .name = "pext_spec",
+    .get = prop_pext_spec_get,
+    .set = prop_pext_spec_set,
+};
+
 static void prop_vlen_set(Object *obj, Visitor *v, const char *name,
                          void *opaque, Error **errp)
 {
@@ -3646,6 +3677,7 @@ static Property riscv_cpu_properties[] = {
 
     {.name = "priv_spec", .info = &prop_priv_spec},
     {.name = "vext_spec", .info = &prop_vext_spec},
+    {.name = "pext_spec", .info = &prop_pext_spec},
 
     {.name = "vlen", .info = &prop_vlen},
     {.name = "elen", .info = &prop_elen},

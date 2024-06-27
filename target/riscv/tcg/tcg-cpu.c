@@ -273,18 +273,6 @@ static void riscv_cpu_validate_p(CPURISCVState *env, RISCVCPUConfig *cfg,
                          "sub-extension is conflict with RVP.");
         return;
     }
-    if (cfg->pext_spec) {
-        if (!g_strcmp0(cfg->pext_spec, "v0.5.2")) {
-                    env->pext_ver = PEXT_VERSION_0_05_2;
-        } else {
-            error_setg(errp, "Unsupported packed spec version '%s'",
-                       cfg->pext_spec);
-            return;
-        }
-    } else {
-            qemu_log("packed verison is not specified, "
-                     "use the default value v0.9.4\n");
-    }
     if (riscv_cpu_mxl(env) == MXL_RV64) {
         if (!cfg->ext_psfoperand) {
             error_setg(errp, "The Zpsfoperand"

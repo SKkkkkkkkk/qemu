@@ -123,6 +123,7 @@ enum {
 #define VEXT_VERSION_1_00_0 0x00010000
 #define VEXT_VER_1_00_0_STR "v1.0"
 #define PEXT_VERSION_0_05_2 0x00000502
+#define PEXT_VER_0_05_2_STR "v0.5.2"
 
 enum {
     TRANSLATE_SUCCESS,
