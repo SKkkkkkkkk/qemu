@@ -146,7 +146,8 @@ static void andes_v5_gen_branch_tcgv(DisasContext *ctx, uint32_t opc,
     ctx->pc_save = orig_pc_save;
 
     gen_set_label(label); /* branch taken */
-    if (!has_ext(ctx, RVC) && !ctx->cfg_ptr->ext_zca && (imm & 0x3)) {
+    if (!has_ext(ctx, RVC) && !ctx->cfg_ptr->ext_zca &&
+        ((ctx->base.pc_next + imm) & 0x3)) {
         /* misaligned */
         TCGv target_pc = tcg_temp_new();
         gen_pc_plus_diff(target_pc, ctx, imm);
