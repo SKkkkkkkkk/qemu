@@ -1421,10 +1421,13 @@ rvpr_acc(CPURISCVState *env, target_ulong a,
 {
     int i, passes = sizeof(target_ulong) / size;
     target_ulong result = 0;
+    target_ulong vxsat_bak = 0;
 
+    pre_fn(env, &vxsat_bak);
     for (i = 0; i < passes; i += step) {
         fn(env, &result, &a, &b, &c, i);
     }
+    post_fn(env, vxsat_bak);
     return result;
 }
 
