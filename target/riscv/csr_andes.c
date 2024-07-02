@@ -293,6 +293,26 @@ static RISCVException rvarch2(CPURISCVState *env, int csrno)
     }
 }
 
+static RISCVException rvarch3(CPURISCVState *env, int csrno)
+{
+    AndesCsr *csr = &env->andes_csr;
+    bool rvarch3bit;
+
+    if (riscv_cpu_mxl(env) == MXL_RV32) {
+        rvarch3bit = get_field(csr->csrno[CSR_MRVARCH_CFG2],
+                               MASK_MRVARCH_CFG2_MRVARCH_EXT3);
+    } else {
+        rvarch3bit = get_field(csr->csrno[CSR_MRVARCH_CFG],
+                               MASK_MRVARCH_CFG_MRVARCH_EXT3);
+    }
+
+    if (rvarch3bit) {
+        return RISCV_EXCP_NONE;
+    } else {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+}
+
 static RISCVException ccache(CPURISCVState *env, int csrno)
 {
     AndesCsr *csr = &env->andes_csr;
@@ -960,11 +980,13 @@ static AndesCsrConfigInfo csr_mrvarch_cfg_map[] = {
     /* bits:[32] */
     {CONFIG_BOOL,   MASK_MRVARCH_CFG_ZVQMAC, "isa-zvqmac"},
     {CONFIG_BOOL,   MASK_MRVARCH_CFG_ZVLSSEG, "isa-zvlsseg"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG_MRVARCH_EXT3, "mrvarch_cfg_mrvarch_ext3"},
 #endif
 };
 static AndesCsrConfigInfo csr_mrvarch_cfg2_map[]  = {
     {CONFIG_BOOL,   MASK_MRVARCH_CFG2_ZVQMAC, "isa-zvqmac"},
     {CONFIG_BOOL,   MASK_MRVARCH_CFG2_ZVLSSEG, "isa-zvlsseg"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG2_MRVARCH_EXT3, "mrvarch_cfg_mrvarch_ext3"},
 };
 
 static AndesCsrConfigInfo csr_mvec_cfg_map[]  = {
@@ -1178,6 +1200,7 @@ riscv_csr_operations andes_csr_ops[CSR_TABLE_SIZE] = {
     [CSR_MVEC_CFG]          = { "mvec_cfg",          veccfg,  read_csr },
     [CSR_MRVARCH_CFG]       = { "mrvarch_cfg",       rvarch,  read_csr },
     [CSR_MRVARCH_CFG2]      = { "mrvarch_cfg2",      rvarch2, read_csr },
+    [CSR_MRVARCH_CFG3]      = { "mrvarch_cfg3",      rvarch3, read_csr },
     [CSR_MCCACHE_CTL_BASE]  = { "mccache_ctl_base",  ccache,  read_csr },
     [CSR_MHVM_CFG]          = { "mhvm_cfg",          any,     read_csr },
     [CSR_MHVMB]             = { "mhvmb",             any,     read_csr },
