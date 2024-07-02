@@ -34,6 +34,7 @@
 #include "debug.h"
 #include "tcg/oversized-guest.h"
 #include "pmp.h"
+#include "exec/helper-proto.h"
 
 int riscv_env_mmu_index(CPURISCVState *env, bool ifetch)
 {
@@ -1924,6 +1925,14 @@ void riscv_cpu_do_interrupt(CPUState *cs)
     target_ulong mtval2 = 0;
     int sxlen = 0;
     int mxlen = 0;
+
+    if (env->itrigger_enabled) {
+        /*
+         * Check icount trigger matches when a trap is taken from a privilege
+         * mode where the trigger is enabled.
+         */
+        helper_itrigger_match(env);
+    }
 
     if (!async) {
         /* set tval to badaddr for traps with address information */
