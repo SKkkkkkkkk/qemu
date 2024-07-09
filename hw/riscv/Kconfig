@@ -21,6 +21,7 @@ config ANDES_AE350
     select ATFSDC010
     select SERIAL
     select VIRTIO_MMIO
+    select ATCIOPMP300
 
 config MICROCHIP_PFSOC
     bool

@@ -514,11 +514,18 @@ struct CPUArchState {
     AceAgentReg ace_agent_register;
     AceAgentRunInsn ace_agent_run_insn;
 
+    /* Support for IOPMP */
+    bool support_iopmp;
+    uint32_t iopmp_sid;
+
 #ifndef CONFIG_USER_ONLY
     MemoryRegion *cpu_as_root;
     MemoryRegion *cpu_as_mem;
+    MemoryRegion *cpu_as_iopmp;
     MemoryRegion *mask_ilm;
     MemoryRegion *mask_dlm;
+    MemoryRegion *mask_ilm_alias;
+    MemoryRegion *mask_dlm_alias;
     uint64_t ilm_base;
     uint64_t dlm_base;
     uint32_t ilm_size;
@@ -950,4 +957,10 @@ const char *satp_mode_str(uint8_t satp_mode, bool is_32_bit);
 void th_register_custom_csrs(RISCVCPU *cpu);
 
 const char *priv_spec_to_str(int priv_version);
+
+static inline int riscv_asidx_from_attrs(CPUState *cs, MemTxAttrs attrs)
+{
+    return attrs.secure ? 1 : 0;
+}
+
 #endif /* RISCV_CPU_H */

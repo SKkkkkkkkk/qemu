@@ -218,4 +218,12 @@ config IOSB
 config XLNX_VERSAL_TRNG
     bool
 
+config ATCIOPMP300
+    bool
+    select RISCV_IOPMP
+
+config RISCV_IOPMP
+    bool
+    select STREAM
+
 source macio/Kconfig

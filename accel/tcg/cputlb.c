@@ -1062,8 +1062,28 @@ void tlb_set_page_full(CPUState *cpu, int mmu_idx,
 
     prot = full->prot;
     asidx = cpu_asidx_from_attrs(cpu, full->attrs);
-    section = address_space_translate_for_iotlb(cpu, asidx, paddr_page,
+
+    /*
+     * Because translate granularity can be smaller than TARGET_PAGE size, use
+     * phys_addr to get correct translation result.
+     */
+    section = address_space_translate_for_iotlb(cpu, asidx, full->phys_addr,
                                                 &xlat, &sz, full->attrs, &prot);
+    /* Update page size */
+    full->lg_page_size = ctz64(sz);
+    if (full->lg_page_size > TARGET_PAGE_BITS) {
+        full->lg_page_size = TARGET_PAGE_BITS;
+    } else {
+        sz = TARGET_PAGE_SIZE;
+    }
+
+    is_ram = memory_region_is_ram(section->mr);
+    is_romd = memory_region_is_romd(section->mr);
+    /* If the translated mr is ram/rom, make xlat align the TARGET_PAGE */
+    if (is_ram || is_romd) {
+        xlat &= TARGET_PAGE_MASK;
+    }
+
     assert(sz >= TARGET_PAGE_SIZE);
 
     tlb_debug("vaddr=%016" VADDR_PRIx " paddr=0x" HWADDR_FMT_plx
@@ -1075,9 +1095,6 @@ void tlb_set_page_full(CPUState *cpu, int mmu_idx,
         /* Repeat the MMU check and TLB fill on every access.  */
         read_flags |= TLB_INVALID_MASK;
     }
-
-    is_ram = memory_region_is_ram(section->mr);
-    is_romd = memory_region_is_romd(section->mr);
 
     if (is_ram || is_romd) {
         /* RAM and ROMD both have associated host memory. */
@@ -1170,6 +1187,7 @@ void tlb_set_page_full(CPUState *cpu, int mmu_idx,
     full = &desc->fulltlb[index];
     full->xlat_section = iotlb - addr_page;
     full->phys_addr = paddr_page;
+    full->section = section;
 
     /* Now calculate the new entry */
     tn.addend = addend - addr_page;
@@ -1261,13 +1279,14 @@ static inline void cpu_unaligned_access(CPUState *cpu, vaddr addr,
 }
 
 static MemoryRegionSection *
-io_prepare(hwaddr *out_offset, CPUState *cpu, hwaddr xlat,
-           MemTxAttrs attrs, vaddr addr, uintptr_t retaddr)
+io_prepare(hwaddr *out_offset, CPUState *cpu, MemTxAttrs attrs, vaddr addr,
+           uintptr_t retaddr, CPUTLBEntryFull *full)
 {
     MemoryRegionSection *section;
-    hwaddr mr_offset;
+    hwaddr mr_offset, xlat;
 
-    section = iotlb_to_section(cpu, xlat, attrs);
+    xlat = full->xlat_section;
+    section = full->section;
     mr_offset = (xlat & TARGET_PAGE_MASK) + addr;
     cpu->mem_io_pc = retaddr;
     if (!cpu->neg.can_do_io) {
@@ -1584,9 +1603,7 @@ bool tlb_plugin_lookup(CPUState *cpu, vaddr addr, int mmu_idx,
 
     /* We must have an iotlb entry for MMIO */
     if (tlb_addr & TLB_MMIO) {
-        MemoryRegionSection *section =
-            iotlb_to_section(cpu, full->xlat_section & ~TARGET_PAGE_MASK,
-                             full->attrs);
+        MemoryRegionSection *section = full->section;
         data->is_io = true;
         data->mr = section->mr;
     } else {
@@ -1945,9 +1962,13 @@ static uint64_t int_ld_mmio_beN(CPUState *cpu, CPUTLBEntryFull *full,
         this_mop = ctz32(size | (int)addr | 8);
         this_size = 1 << this_mop;
         this_mop |= MO_BE;
-
-        r = memory_region_dispatch_read(mr, mr_offset, &val,
-                                        this_mop, full->attrs);
+        if (type == MMU_INST_FETCH) {
+            r = memory_region_dispatch_fetch(mr, mr_offset, &val,
+                                             this_mop, full->attrs);
+        } else {
+            r = memory_region_dispatch_read(mr, mr_offset, &val,
+                                            this_mop, full->attrs);
+        }
         if (unlikely(r != MEMTX_OK)) {
             io_failed(cpu, full, addr, this_size, type, mmu_idx, r, ra);
         }
@@ -1976,7 +1997,7 @@ static uint64_t do_ld_mmio_beN(CPUState *cpu, CPUTLBEntryFull *full,
     tcg_debug_assert(size > 0 && size <= 8);
 
     attrs = full->attrs;
-    section = io_prepare(&mr_offset, cpu, full->xlat_section, attrs, addr, ra);
+    section = io_prepare(&mr_offset, cpu, attrs, addr, ra, full);
     mr = section->mr;
 
     BQL_LOCK_GUARD();
@@ -1997,7 +2018,7 @@ static Int128 do_ld16_mmio_beN(CPUState *cpu, CPUTLBEntryFull *full,
     tcg_debug_assert(size > 8 && size <= 16);
 
     attrs = full->attrs;
-    section = io_prepare(&mr_offset, cpu, full->xlat_section, attrs, addr, ra);
+    section = io_prepare(&mr_offset, cpu, attrs, addr, ra, full);
     mr = section->mr;
 
     BQL_LOCK_GUARD();
@@ -2517,7 +2538,7 @@ static uint64_t do_st_mmio_leN(CPUState *cpu, CPUTLBEntryFull *full,
     tcg_debug_assert(size > 0 && size <= 8);
 
     attrs = full->attrs;
-    section = io_prepare(&mr_offset, cpu, full->xlat_section, attrs, addr, ra);
+    section = io_prepare(&mr_offset, cpu, attrs, addr, ra, full);
     mr = section->mr;
 
     BQL_LOCK_GUARD();
@@ -2537,7 +2558,7 @@ static uint64_t do_st16_mmio_leN(CPUState *cpu, CPUTLBEntryFull *full,
     tcg_debug_assert(size > 8 && size <= 16);
 
     attrs = full->attrs;
-    section = io_prepare(&mr_offset, cpu, full->xlat_section, attrs, addr, ra);
+    section = io_prepare(&mr_offset, cpu, attrs, addr, ra, full);
     mr = section->mr;
 
     BQL_LOCK_GUARD();

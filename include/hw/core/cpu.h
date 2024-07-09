@@ -208,6 +208,12 @@ struct CPUClass {
  */
 struct CPUTLBEntryFull {
     /*
+     * @section contains the section given by address_space_translate_for_iotlb
+     * , its address space may differ from CPU address space
+     */
+    MemoryRegionSection *section;
+
+    /*
      * @xlat_section contains:
      *  - in the lower TARGET_PAGE_BITS, a physical section number
      *  - with the lower TARGET_PAGE_BITS masked off, an offset which

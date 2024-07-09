@@ -503,18 +503,19 @@ int riscv_cpu_vsirq_pending(CPURISCVState *env)
 
 static int riscv_cpu_andes_m_mode_irq(CPURISCVState *env)
 {
-    if ((env->mie & MIE_ANDES_PMOVI) == 0) {
-        return 0;
-    }
+    /* Sequence is according to local interrupt priority */
 
     target_ulong mmsc_cfg = env->andes_csr.csrno[CSR_MMSC_CFG];
-    if ((mmsc_cfg & MASK_MMSC_CFG_PMNDS) == 0) {
-        return 0;
+    if ((env->mie & MIE_ANDES_PMOVI) && (mmsc_cfg & MASK_MMSC_CFG_PMNDS)) {
+        if (env->mip & MIP_ANDES_PMOVI) {
+            env->mip &= ~MIP_ANDES_PMOVI;
+            return IRQ_ANDES_PMOVI_M;
+        }
     }
 
-    if (env->mip & MIP_ANDES_PMOVI) {
-        env->mip &= ~MIP_ANDES_PMOVI;
-        return IRQ_ANDES_PMOVI_M;
+    if ((env->mie & MIE_ANDES_BWEI) && (env->mip & MIP_ANDES_BWEI)) {
+        env->mip &= ~MIP_ANDES_BWEI;
+        return IRQ_ANDES_BWEI;
     }
 
     return 0;
@@ -1443,11 +1444,25 @@ void riscv_cpu_do_transaction_failed(CPUState *cs, hwaddr physaddr,
     CPURISCVState *env = &cpu->env;
 
     if (access_type == MMU_DATA_STORE) {
-        cs->exception_index = RISCV_EXCP_STORE_AMO_ACCESS_FAULT;
+        if (response == MEMTX_ERROR || response == MEMTX_DECODE_ERROR) {
+            /* Trigger interrupt and do not restore */
+            riscv_cpu_update_mip(env, MIP_ANDES_BWEI, BOOL_TO_MASK(1));
+            return;
+        } else {
+            cs->exception_index = RISCV_EXCP_STORE_AMO_ACCESS_FAULT;
+        }
     } else if (access_type == MMU_DATA_LOAD) {
         cs->exception_index = RISCV_EXCP_LOAD_ACCESS_FAULT;
     } else {
-        cs->exception_index = RISCV_EXCP_INST_ACCESS_FAULT;
+        if (riscv_cpu_all_pending(env) & (MIP_MEIP | MIP_SEIP | MIP_UEIP)) {
+            if (response == MEMTX_ERROR || response == MEMTX_DECODE_ERROR) {
+                /* do nothing (do not trigger excepction)*/
+            } else {
+                cs->exception_index = RISCV_EXCP_INST_ACCESS_FAULT;
+            }
+        } else {
+            cs->exception_index = RISCV_EXCP_INST_ACCESS_FAULT;
+        }
     }
 
     env->badaddr = addr;
@@ -1640,8 +1655,22 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
     }
 
     if (ret == TRANSLATE_SUCCESS) {
-        tlb_set_page(cs, address & ~(tlb_size - 1), pa & ~(tlb_size - 1),
-                     prot, mmu_idx, tlb_size);
+        if (env->support_iopmp) {
+            /*
+             * Do not align address on early stage, IOPMP need origin address
+             * for permission check
+             */
+            tlb_set_page_with_attrs(cs, address,
+                                    pa,
+                                    (MemTxAttrs)
+                                        { .secure = 1,
+                                          .requester_id = env->iopmp_sid,
+                                        },
+                                    prot, mmu_idx, tlb_size);
+        } else {
+            tlb_set_page(cs, address & ~(tlb_size - 1), pa & ~(tlb_size - 1),
+                         prot, mmu_idx, tlb_size);
+        }
         return true;
     } else if (probe) {
         return false;

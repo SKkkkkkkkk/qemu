@@ -110,7 +110,9 @@ struct MemoryRegionSection {
 
 typedef struct IOMMUTLBEntry IOMMUTLBEntry;
 
-/* See address_space_translate: bit 0 is read, bit 1 is write.  */
+/*
+ * See address_space_translate: bit 0 is read, bit 1 is write, bit 2 is execute
+ */
 typedef enum {
     IOMMU_NONE = 0,
     IOMMU_RO   = 1,
@@ -274,6 +276,10 @@ struct MemoryRegionOps {
                   uint64_t data,
                   unsigned size);
 
+    uint64_t (*fetch)(void *opaque,
+                      hwaddr addr,
+                      unsigned size);
+
     MemTxResult (*read_with_attrs)(void *opaque,
                                    hwaddr addr,
                                    uint64_t *data,
@@ -282,6 +288,11 @@ struct MemoryRegionOps {
     MemTxResult (*write_with_attrs)(void *opaque,
                                     hwaddr addr,
                                     uint64_t data,
+                                    unsigned size,
+                                    MemTxAttrs attrs);
+    MemTxResult (*fetch_with_attrs)(void *opaque,
+                                    hwaddr addr,
+                                    uint64_t *data,
                                     unsigned size,
                                     MemTxAttrs attrs);
 
@@ -2602,6 +2613,22 @@ MemTxResult memory_region_dispatch_read(MemoryRegion *mr,
 MemTxResult memory_region_dispatch_write(MemoryRegion *mr,
                                          hwaddr addr,
                                          uint64_t data,
+                                         MemOp op,
+                                         MemTxAttrs attrs);
+
+/**
+ * memory_region_dispatch_fetch: perform a fetch directly to the specified
+ * MemoryRegion.
+ *
+ * @mr: #MemoryRegion to access
+ * @addr: address within that region
+ * @pval: pointer to uint64_t which the data is written to
+ * @op: size, sign, and endianness of the memory operation
+ * @attrs: memory transaction attributes to use for the access
+ */
+MemTxResult memory_region_dispatch_fetch(MemoryRegion *mr,
+                                         hwaddr addr,
+                                         uint64_t *pval,
                                          MemOp op,
                                          MemTxAttrs attrs);
 

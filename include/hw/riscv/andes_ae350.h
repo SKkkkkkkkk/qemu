@@ -28,12 +28,15 @@
 #include "hw/net/atfmac100.h"
 #include "hw/sd/atfsdc010.h"
 #include "hw/misc/andes_atcsmu.h"
+#include "hw/misc/riscv_iopmp_dispatcher.h"
 
 #define ANDES_CPUS_MAX 8
 
 #define TYPE_ANDES_AE350_SOC "riscv.andes.ae350.soc"
 #define ANDES_AE350_SOC(obj) \
     OBJECT_CHECK(AndesAe350SocState, (obj), TYPE_ANDES_AE350_SOC)
+
+#define AE350_IOPMP_TARGET_NUM 6
 
 typedef struct AndesAe350SocState {
     /*< private >*/
@@ -58,6 +61,8 @@ typedef struct AndesAe350SocState {
     uint64_t hvm_base;
     uint64_t hvm_size_pow_2;
 
+    DeviceState *iopmp_dev[AE350_IOPMP_TARGET_NUM];
+    Iopmp_Dispatcher_State iopmp_dispatcher;
 } AndesAe350SocState;
 
 #define TYPE_ANDES_AE350_MACHINE MACHINE_TYPE_NAME("andes_ae350")
@@ -106,6 +111,22 @@ enum {
     ANDES_AE350_SDC,
     ANDES_AE350_SPI2,
     ANDES_AE350_VIRTIO,
+    ANDES_AE350_IOPMP,
+    ANDES_AE350_IOPMP_APB,
+    ANDES_AE350_IOPMP_RAM,
+    ANDES_AE350_IOPMP_SLP,
+    ANDES_AE350_IOPMP_ROM,
+    ANDES_AE350_IOPMP_IOCP,
+    ANDES_AE350_IOPMP_DFS
+};
+
+enum {
+    IOPMP_APB,
+    IOPMP_RAM,
+    IOPMP_SLP,
+    IOPMP_ROM,
+    IOPMP_IOCP, /* not impl */
+    IOPMP_DFS /* not impl */
 };
 
 enum {
@@ -119,6 +140,7 @@ enum {
     ANDES_AE350_MAC_IRQ = 19,
     ANDES_AE350_VIRTIO_COUNT = 8,
     ANDES_AE350_VIRTIO_IRQ = 16, /* 16 to 23 */
+    ANDES_AE350_IOPMP_IRQ = 21,
 };
 
 #define ANDES_UART_REG_SHIFT    0x2
@@ -134,6 +156,11 @@ enum {
 /* HVM defalut configs */
 #define ANDES_HVM_BASE_DEFAULT       0x90000000
 #define ANDES_HVM_SIZE_POW_2_DEFAULT 0x0
+
+/* SID for IOPMP */
+#define ANDES_AE350_CPU_IOPMP_SID         0
+#define ANDES_AE350_DMAC_INF0_IOPMP_SID   6
+#define ANDES_AE350_DMAC_INF1_IOPMP_SID   7
 
 #if defined(TARGET_RISCV32)
 #define VIRT_CPU TYPE_RISCV_CPU_BASE32

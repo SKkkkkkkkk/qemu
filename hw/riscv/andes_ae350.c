@@ -52,6 +52,8 @@
 #include "hw/sd/atfsdc010.h"
 #include "hw/rtc/atcrtc100.h"
 #include "hw/watchdog/atcwdt200.h"
+#include "hw/misc/atciopmp300.h"
+#include "hw/misc/riscv_iopmp_dispatcher.h"
 
 #define BIOS_FILENAME ""
 
@@ -74,6 +76,12 @@ static const struct MemmapEntry {
     [ANDES_AE350_LCD]       = { 0xe0200000,   0x100000 },
     [ANDES_AE350_SMC]       = { 0xe0400000,   0x100000 },
     [ANDES_AE350_L2C]       = { 0xe0500000,   0x100000 },
+    [ANDES_AE350_IOPMP_APB] = { 0xf1000000,   0x4000   },
+    [ANDES_AE350_IOPMP_RAM] = { 0xf1004000,   0x4000   },
+    [ANDES_AE350_IOPMP_SLP] = { 0xf1008000,   0x4000   },
+    [ANDES_AE350_IOPMP_ROM] = { 0xf100c000,   0x4000   },
+    [ANDES_AE350_IOPMP_IOCP] = { 0xf1010000,   0x4000   },
+    [ANDES_AE350_IOPMP_DFS] = { 0xf1014000,   0x4000   },
     [ANDES_AE350_PLIC]      = { 0xe4000000,   0x400000 },
     [ANDES_AE350_PLMT]      = { 0xe6000000,   0x100000 },
     [ANDES_AE350_PLICSW]    = { 0xe6400000,   0x400000 },
@@ -92,6 +100,28 @@ static const struct MemmapEntry {
     [ANDES_AE350_SPI2]      = { 0xf0f00000,   0x100000 },
     [ANDES_AE350_VIRTIO]    = { 0xfe000000,     0x1000 },
 };
+
+static void create_fdt_iopmp(AndesAe350BoardState *bs,
+                             const struct MemmapEntry *memmap,
+                             uint32_t irq_mmio_phandle)
+{
+    g_autofree char *name = NULL;
+    MachineState *ms = MACHINE(bs);
+
+    for (int i = 0; i < AE350_IOPMP_TARGET_NUM; i++) {
+        name = g_strdup_printf("/soc/iopmp@%lx",
+                               (long)memmap[ANDES_AE350_IOPMP_APB + i].base);
+        qemu_fdt_add_subnode(ms->fdt, name);
+        qemu_fdt_setprop_string(ms->fdt, name, "compatible", "riscv_iopmp");
+        qemu_fdt_setprop_cells(ms->fdt, name, "reg", 0x0,
+            memmap[ANDES_AE350_IOPMP_APB + i].base, 0x0,
+            memmap[ANDES_AE350_IOPMP_APB + i].size);
+        qemu_fdt_setprop_cell(ms->fdt, name, "interrupt-parent",
+                              irq_mmio_phandle);
+        qemu_fdt_setprop_cells(ms->fdt, name, "interrupts",
+                               ANDES_AE350_IOPMP_IRQ, 0x4);
+    }
+}
 
 static void
 create_fdt(AndesAe350BoardState *bs, const struct MemmapEntry *memmap,
@@ -287,6 +317,8 @@ create_fdt(AndesAe350BoardState *bs, const struct MemmapEntry *memmap,
                                 ANDES_AE350_VIRTIO_IRQ + i, 0x4);
         g_free(virtio_name);
     }
+
+    create_fdt_iopmp(bs, memmap, plic_phandle);
 }
 
 static char *init_hart_config(const char *hart_config, int num_harts)
@@ -307,6 +339,31 @@ static char *init_hart_config(const char *hart_config, int num_harts)
     return result;
 }
 
+static const struct MemmapEntry iopmp_memmap[] = {
+    [IOPMP_APB]      = { 0xf0000000, 0x10000000 },
+    [IOPMP_RAM]      = { 0x00000000, 0x80000000 },
+    [IOPMP_SLP]      = { 0xa0000000,  0x1000000 },
+    [IOPMP_ROM]      = { 0x80000000,  0x8000000 },
+    [IOPMP_IOCP]     = { 0x0,   0x0 },
+    [IOPMP_DFS]      = { 0x0,   0x0 },
+};
+
+static void cpu_connect_iopmp(RISCVHartArrayState *cpus, MemoryRegion *iopmp_mr)
+{
+    CPURISCVState *env;
+    MemoryRegion *iopmp_alias = g_new(MemoryRegion, cpus->num_harts);
+    for (int i = 0; i < cpus->num_harts; i++) {
+        env = &cpus->harts[i].env;
+        env->support_iopmp = true;
+        env->iopmp_sid = ANDES_AE350_CPU_IOPMP_SID;
+
+        memory_region_init_alias(&iopmp_alias[i], NULL, "iopmp_alias",
+                                 iopmp_mr, 0, ~0ull);
+        memory_region_add_subregion_overlap(env->cpu_as_iopmp, 0,
+                                            &iopmp_alias[i], 0);
+    }
+}
+
 static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
 {
     const struct MemmapEntry *memmap = andes_ae350_memmap;
@@ -315,6 +372,7 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
     AndesAe350SocState *s = ANDES_AE350_SOC(dev_soc);
     char *plic_hart_config, *plicsw_hart_config;
     NICInfo *nd = &nd_table[0];
+    Object *obj = OBJECT(dev_soc);
 
     if (s->ilm_size) {
         if (s->ilm_size < ANDES_LM_SIZE_MIN || s->ilm_size > ANDES_LM_SIZE_MAX
@@ -484,6 +542,28 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
         ANDES_UART_REG_SHIFT,
         qdev_get_gpio_in(DEVICE(s->plic), ANDES_AE350_UART2_IRQ),
         38400, serial_hd(0), DEVICE_LITTLE_ENDIAN);
+
+    object_initialize_child(obj, "iopmp_dispatcher", &(s->iopmp_dispatcher),
+                            TYPE_IOPMP_DISPATCHER);
+    qdev_prop_set_uint32(DEVICE(&s->iopmp_dispatcher), "target-num",
+                         AE350_IOPMP_TARGET_NUM);
+    sysbus_realize(SYS_BUS_DEVICE(&s->iopmp_dispatcher), NULL);
+
+    /* IOPMP */
+    for (int i = 0; i < AE350_IOPMP_TARGET_NUM; i++) {
+        s->iopmp_dev[i] =
+            atciopmp300_create(memmap[ANDES_AE350_IOPMP_APB + i].base,
+                qdev_get_gpio_in(DEVICE(s->plic), ANDES_AE350_IOPMP_IRQ));
+
+        iopmp_dispatcher_add_target(DEVICE(&s->iopmp_dispatcher),
+            &(ATCIOPMP300(s->iopmp_dev[i])->iopmp_sysbus_as),
+            (StreamSink *)&(ATCIOPMP300(s->iopmp_dev[i])->transaction_info_sink),
+            iopmp_memmap[i].base, iopmp_memmap[i].size,
+            i);
+    }
+
+    /* CPU connect to iopmp */
+    cpu_connect_iopmp(&s->cpus, MEMORY_REGION(&s->iopmp_dispatcher.iommu));
 }
 
 static void andes_ae350_soc_instance_init(Object *obj)

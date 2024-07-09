@@ -599,9 +599,13 @@ static void andes_cpu_lm_init(Object *obj)
 
     env->cpu_as_root = g_new(MemoryRegion, 1);
     env->cpu_as_mem = g_new(MemoryRegion, 1);
+    env->cpu_as_iopmp = g_new(MemoryRegion, 1);
     /* Outer container... */
     memory_region_init(env->cpu_as_root, OBJECT(obj), "cpu-as-root", ~0ull);
     memory_region_set_enabled(env->cpu_as_root, true);
+
+    memory_region_init(env->cpu_as_iopmp, OBJECT(obj), "cpu-as-secure", ~0ull);
+    memory_region_set_enabled(env->cpu_as_iopmp, true);
 
     memory_region_init_alias(env->cpu_as_mem, OBJECT(obj), "cpu-as-mem",
                              get_system_memory(), 0, ~0ull);
@@ -609,10 +613,13 @@ static void andes_cpu_lm_init(Object *obj)
                                         env->cpu_as_mem, 0);
     memory_region_set_enabled(env->cpu_as_mem, true);
 
-    cs->num_ases = 1;
+    cs->num_ases = 2;
     cpu_address_space_init(cs, 0, "cpu-memory", env->cpu_as_root);
+    cpu_address_space_init(cs, 1, "cpu-secure-memory", env->cpu_as_iopmp);
     env->mask_ilm = g_new(MemoryRegion, 1);
     env->mask_dlm = g_new(MemoryRegion, 1);
+    env->mask_ilm_alias = g_new(MemoryRegion, 1);
+    env->mask_dlm_alias = g_new(MemoryRegion, 1);
 }
 
 static void andes_cpu_lm_realize(DeviceState *dev)
@@ -625,6 +632,8 @@ static void andes_cpu_lm_realize(DeviceState *dev)
             g_strdup_printf("%s%d", "riscv.andes.ae350.ilm", lm_num);
         memory_region_init_ram(env->mask_ilm, OBJECT(dev), ilm_name,
                                env->ilm_size, &error_fatal);
+        memory_region_init_alias(env->mask_ilm_alias, OBJECT(dev),
+            "riscv.andes.ae350.ilm_alias", env->mask_ilm, 0, env->ilm_size);
         /* local memory operation */
         env->mask_ilm->ops = &local_mem_ops;
         env->mask_ilm->opaque = env->mask_ilm;
@@ -632,6 +641,8 @@ static void andes_cpu_lm_realize(DeviceState *dev)
         if (env->ilm_default_enable) {
             memory_region_add_subregion_overlap(env->cpu_as_root, env->ilm_base,
                                         env->mask_ilm, 1);
+            memory_region_add_subregion_overlap(env->cpu_as_iopmp,
+                env->ilm_base, env->mask_ilm_alias, 1);
         }
     }
     if (env->dlm_size) {
@@ -639,6 +650,8 @@ static void andes_cpu_lm_realize(DeviceState *dev)
             g_strdup_printf("%s%d", "riscv.andes.ae350.dlm", lm_num);
         memory_region_init_ram(env->mask_dlm, OBJECT(dev), dlm_name,
                                env->dlm_size, &error_fatal);
+        memory_region_init_alias(env->mask_dlm_alias, OBJECT(dev),
+            "riscv.andes.ae350.dlm_alias", env->mask_dlm, 0, env->dlm_size);
         /* local memory operation */
         env->mask_dlm->ops = &local_mem_ops;
         env->mask_dlm->opaque = env->mask_dlm;
@@ -646,6 +659,8 @@ static void andes_cpu_lm_realize(DeviceState *dev)
         if (env->dlm_default_enable) {
             memory_region_add_subregion_overlap(env->cpu_as_root, env->dlm_base,
                                         env->mask_dlm, 1);
+            memory_region_add_subregion_overlap(env->cpu_as_iopmp,
+                env->dlm_base, env->mask_dlm_alias, 1);
         }
     }
 }
@@ -2003,17 +2018,23 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
         if (!memory_region_is_mapped(env->mask_ilm)) {
             memory_region_add_subregion_overlap(env->cpu_as_root,
                                 env->ilm_base, env->mask_ilm, 1);
+            memory_region_add_subregion_overlap(env->cpu_as_iopmp,
+                env->ilm_base, env->mask_ilm_alias, 1);
         }
     } else if (env->mask_ilm && memory_region_is_mapped(env->mask_ilm)) {
         memory_region_del_subregion(env->cpu_as_root, env->mask_ilm);
+        memory_region_del_subregion(env->cpu_as_iopmp, env->mask_ilm_alias);
     }
     if (env->dlm_default_enable) {
         if (!memory_region_is_mapped(env->mask_dlm)) {
             memory_region_add_subregion_overlap(env->cpu_as_root,
                                 env->dlm_base, env->mask_dlm, 1);
+            memory_region_add_subregion_overlap(env->cpu_as_iopmp,
+                env->dlm_base, env->mask_dlm_alias, 1);
         }
     } else if (env->mask_dlm && memory_region_is_mapped(env->mask_dlm)) {
         memory_region_del_subregion(env->cpu_as_root, env->mask_dlm);
+        memory_region_del_subregion(env->cpu_as_iopmp, env->mask_dlm_alias);
     }
     tlb_flush(env_cpu(env));
     if (locked) {
@@ -3882,6 +3903,7 @@ static int64_t riscv_get_arch_id(CPUState *cs)
 
 static const struct SysemuCPUOps riscv_sysemu_ops = {
     .get_phys_page_debug = riscv_cpu_get_phys_page_debug,
+    .asidx_from_attrs = riscv_asidx_from_attrs,
     .write_elf64_note = riscv_cpu_write_elf64_note,
     .write_elf32_note = riscv_cpu_write_elf32_note,
     .legacy_vmsd = &vmstate_riscv_cpu,

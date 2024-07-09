@@ -855,8 +855,11 @@ static RISCVException write_lmb(CPURISCVState *env,
         if (enable && !ilm_mapped) {
             memory_region_add_subregion_overlap(env->cpu_as_root,
                                 env->ilm_base, env->mask_ilm, 1);
+            memory_region_add_subregion_overlap(env->cpu_as_iopmp,
+                env->ilm_base, env->mask_ilm_alias, 1);
         } else if (!enable && ilm_mapped) {
             memory_region_del_subregion(env->cpu_as_root, env->mask_ilm);
+            memory_region_del_subregion(env->cpu_as_iopmp, env->mask_ilm_alias);
         }
         env->andes_csr.csrno[csrno] = env->ilm_base | (val & 0xf);
     }
@@ -865,8 +868,11 @@ static RISCVException write_lmb(CPURISCVState *env,
         if (enable && !dlm_mapped) {
             memory_region_add_subregion_overlap(env->cpu_as_root,
                                 env->dlm_base, env->mask_dlm, 1);
+            memory_region_add_subregion_overlap(env->cpu_as_iopmp,
+                                env->dlm_base, env->mask_dlm_alias, 1);
         } else if (!enable && dlm_mapped) {
             memory_region_del_subregion(env->cpu_as_root, env->mask_dlm);
+            memory_region_del_subregion(env->cpu_as_iopmp, env->mask_dlm_alias);
         }
         env->andes_csr.csrno[csrno] = env->dlm_base | (val & 0xf);
     }

@@ -742,6 +742,7 @@ typedef enum RISCVException {
 #define IRQ_S_GEXT                         12
 #define IRQ_PMU_OVF                        13
 #define IRQ_LOCAL_MAX                      64
+#define IRQ_ANDES_BWEI                     17
 #define IRQ_ANDES_PMOVI_M                  18
 #define IRQ_ANDES_PMOVI_S                  (0x100 + IRQ_ANDES_PMOVI_M)
 /* -1 is due to bit zero of hgeip and hgeie being ROZ. */
@@ -762,6 +763,7 @@ typedef enum RISCVException {
 #define MIP_MEIP                           (1 << IRQ_M_EXT)
 #define MIP_SGEIP                          (1 << IRQ_S_GEXT)
 #define MIP_LCOFIP                         (1 << IRQ_PMU_OVF)
+#define MIP_ANDES_BWEI                     (1 << IRQ_ANDES_BWEI)
 #define MIP_ANDES_PMOVI                    (1 << IRQ_ANDES_PMOVI_M)
 
 /* sip masks */
@@ -777,6 +779,7 @@ typedef enum RISCVException {
 #define MIE_UTIE                           (1 << IRQ_U_TIMER)
 #define MIE_SSIE                           (1 << IRQ_S_SOFT)
 #define MIE_USIE                           (1 << IRQ_U_SOFT)
+#define MIE_ANDES_BWEI                     (1 << IRQ_ANDES_BWEI)
 #define MIE_ANDES_PMOVI                    (1 << IRQ_ANDES_PMOVI_M)
 
 /* Machine constants */
