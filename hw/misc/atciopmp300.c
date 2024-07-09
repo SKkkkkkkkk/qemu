@@ -703,14 +703,14 @@ static MemTxResult atciopmp300_write(void *opaque, hwaddr addr, uint64_t value,
 }
 
 /* Match entry in memory domain */
-static int match_entry_md(Atciopmp300state *s, int md_idx, hwaddr s_addr,
-                          hwaddr e_addr, int *entry_idx,
+static int match_entry_md(Atciopmp300state *s, int md_idx, hwaddr start_addr,
+                          hwaddr end_addr, int *entry_idx,
                           int *prior_entry_in_tlb)
 {
     int entry_idx_s, entry_idx_e;
     int result = ENTRY_NO_HIT;
     int i = 0;
-    hwaddr tlb_sa = s_addr & ~(TARGET_PAGE_SIZE - 1);
+    hwaddr tlb_sa = start_addr & ~(TARGET_PAGE_SIZE - 1);
     hwaddr tlb_ea = tlb_sa + TARGET_PAGE_SIZE - 1;
     entry_idx_s = md_idx * s->regs.mdcfg[0];
     entry_idx_e = (md_idx + 1) * s->regs.mdcfg[0];
@@ -727,10 +727,10 @@ static int match_entry_md(Atciopmp300state *s, int md_idx, hwaddr s_addr,
             IOPMP_AMATCH_OFF) {
             continue;
         }
-        if (s_addr >= s->entry_addr[i].sa && s_addr <= s->entry_addr[i].ea) {
+        if (start_addr >= s->entry_addr[i].sa && start_addr <= s->entry_addr[i].ea) {
             /* Check end address */
-            if (e_addr >= s->entry_addr[i].sa &&
-                e_addr <= s->entry_addr[i].ea) {
+            if (end_addr >= s->entry_addr[i].sa &&
+                end_addr <= s->entry_addr[i].ea) {
                 *entry_idx = i;
                 return ENTRY_HIT;
             } else if (i >= s->prio_entry) {
@@ -740,8 +740,8 @@ static int match_entry_md(Atciopmp300state *s, int md_idx, hwaddr s_addr,
                 *entry_idx = i;
                 return ENTRY_PAR_HIT;
             }
-        } else if (e_addr >= s->entry_addr[i].sa &&
-                   e_addr <= s->entry_addr[i].ea) {
+        } else if (end_addr >= s->entry_addr[i].sa &&
+                   end_addr <= s->entry_addr[i].ea) {
             /* Only end address matches the entry */
             if (i >= s->prio_entry) {
                 continue;
@@ -749,8 +749,8 @@ static int match_entry_md(Atciopmp300state *s, int md_idx, hwaddr s_addr,
                 *entry_idx = i;
                 return ENTRY_PAR_HIT;
             }
-        } else if (s_addr < s->entry_addr[i].sa &&
-                   e_addr > s->entry_addr[i].ea) {
+        } else if (start_addr < s->entry_addr[i].sa &&
+                   end_addr > s->entry_addr[i].ea) {
             if (i >= s->prio_entry) {
                 continue;
             } else {
@@ -774,8 +774,8 @@ static int match_entry_md(Atciopmp300state *s, int md_idx, hwaddr s_addr,
     return result;
 }
 
-static int match_entry(Atciopmp300state *s, int sid, hwaddr s_addr,
-                       hwaddr e_addr, int *match_md_idx, int *match_entry_idx,
+static int match_entry(Atciopmp300state *s, int sid, hwaddr start_addr,
+                       hwaddr end_addr, int *match_md_idx, int *match_entry_idx,
                        int *prior_entry_in_tlb)
 {
     int cur_result = ENTRY_NO_HIT;
@@ -786,7 +786,7 @@ static int match_entry(Atciopmp300state *s, int sid, hwaddr s_addr,
 
     for (int md_idx = 0; md_idx < s->md_num; md_idx++) {
         if (srcmd_en & (1ULL << md_idx)) {
-            cur_result = match_entry_md(s, md_idx, s_addr, e_addr,
+            cur_result = match_entry_md(s, md_idx, start_addr, end_addr,
                                         match_entry_idx, prior_entry_in_tlb);
             if (cur_result == ENTRY_HIT || cur_result == ENTRY_PAR_HIT) {
                 *match_md_idx = md_idx;
