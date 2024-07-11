@@ -579,7 +579,7 @@ static void pmu_timer_trigger_irq(RISCVCPU *cpu,
     if (counter->irq_overflow_left > 0) {
         irq_trigger_at = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) +
                         counter->irq_overflow_left;
-        timer_mod_anticipate_ns(cpu->pmu_timer, irq_trigger_at);
+        timer_mod_ns(cpu->pmu_timer, irq_trigger_at);
         counter->irq_overflow_left = 0;
         return;
     }
@@ -675,7 +675,7 @@ int riscv_pmu_setup_timer(CPURISCVState *env, uint64_t value, uint32_t ctr_idx)
         counter->irq_overflow_left = overflow_left;
         overflow_at = INT64_MAX;
     }
-    timer_mod_anticipate_ns(cpu->pmu_timer, overflow_at);
+    timer_mod_ns(cpu->pmu_timer, overflow_at);
 
     return 0;
 }
