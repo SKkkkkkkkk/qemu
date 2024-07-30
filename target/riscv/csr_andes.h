@@ -25,6 +25,11 @@ typedef void (*fp_spec_csr_init_fn)(AndesCsr *);
 #define V5_MMSC_CFG_HSP                     5
 #define V5_MMSC_CFG_ACE                     6
 #define V5_MMSC_CFG_ADDPMC                  7
+#define V5_MMSC_CFG_ADDPMC_4                (0x0 << V5_MMSC_CFG_ADDPMC)
+#define V5_MMSC_CFG_ADDPMC_3                (0x1 << V5_MMSC_CFG_ADDPMC)
+#define V5_MMSC_CFG_ADDPMC_2                (0x2 << V5_MMSC_CFG_ADDPMC)
+#define V5_MMSC_CFG_ADDPMC_1                (0x3 << V5_MMSC_CFG_ADDPMC)
+#define V5_MMSC_CFG_ADDPMC_0                (0x4 << V5_MMSC_CFG_ADDPMC)
 #define V5_MMSC_CFG_VPLIC                   12
 #define V5_MMSC_CFG_EV5PE                   13
 #define V5_MMSC_CFG_LMSLVP                  14

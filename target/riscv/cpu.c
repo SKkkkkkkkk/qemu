@@ -1450,6 +1450,78 @@ static void rv32_andes_n25_cpu_init(Object *obj)
     cfg->ext_zicboz = false;
 }
 
+static void rv32_andes_n225_cpu_init(Object *obj)
+{
+    RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
+    CPURISCVState *env = &RISCV_CPU(obj)->env;
+
+    riscv_cpu_set_misa_ext(
+            env, RVI | RVM | RVA | RVB | RVC | RVU | RVX);
+    rv32_andes_common_cpu_init(obj, VM_1_10_MBARE, NULL);
+    cfg->mmu = false;
+
+    /* Set CPU ID */
+    cfg->marchid = ANDES_CPUID_N225;
+
+    /* inherited from parent obj via riscv_cpu_init() */
+    cfg->pmp = true;
+
+    /* Enable supported extensions */
+    cfg->ext_sdtrig_tcontrol = true;
+    cfg->ext_sdtrig_mcontext = true;
+    cfg->ext_zba = true;
+    cfg->ext_zbb = true;
+    cfg->ext_zbc = true;
+    cfg->ext_zbs = true;
+    cfg->ext_smepmp = true;
+    cfg->ext_zicboz = true;
+    cfg->ext_zca = true;
+    cfg->ext_zcb = true;
+    cfg->ext_zcmp = true;
+    cfg->ext_zcmt = true;
+
+    /* Disable unsupported extensions which are enabled by default */
+    cfg->ext_zihintpause = false;
+    cfg->ext_zawrs = false;
+    cfg->ext_zfa = false;
+    cfg->ext_sstc = false;
+    cfg->ext_svadu = false;
+    cfg->ext_zicbom = false;
+
+    /* CSR_MMSC_CFG = 0x80007209 */
+    env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
+                                         BIT(V5_MMSC_CFG_ECD) |
+                                         (V5_MMSC_CFG_ADDPMC_0) |  /* 0 addtional counters */
+                                         BIT(V5_MMSC_CFG_VPLIC) |
+                                         BIT(V5_MMSC_CFG_EV5PE) |
+                                         BIT(V5_MMSC_CFG_LMSLVP) |
+                                         BIT(V5_MMSC_CFG_MSC_EXT);
+
+    /* CSR_MMSC_CFG2 = 0x9c100200 */
+    target_ulong mmsc_cfg2 = env->andes_csr.csrno[CSR_MRVARCH_CFG2];
+    mmsc_cfg2 = set_field(mmsc_cfg2, MASK_MMSC_CFG2_ECDV, 0x1);
+    mmsc_cfg2 = set_field(mmsc_cfg2, MASK_MMSC_CFG2_RVARCH, 0x1);
+    mmsc_cfg2 = set_field(mmsc_cfg2, MASK_MMSC_CFG2_D_LMSLVP, 0x1);
+    mmsc_cfg2 = set_field(mmsc_cfg2, MASK_MMSC_CFG2_I_LMSLVP, 0x1);
+    mmsc_cfg2 = set_field(mmsc_cfg2, MASK_MMSC_CFG2_RVARCH2, 0x1);
+    mmsc_cfg2 = set_field(mmsc_cfg2, MASK_MMSC_CFG2_MSC_EXT3, 0x1);
+    env->andes_csr.csrno[CSR_MMSC_CFG2] = mmsc_cfg2;
+
+    /* CSR_MMSC_CFG3 = 0xc30000 */
+    target_ulong mmsc_cfg3 = env->andes_csr.csrno[CSR_MRVARCH_CFG3];
+    mmsc_cfg3 = set_field(mmsc_cfg3, MASK_MMSC_CFG3_ILM_ECC_GRAN, 0x3);
+    mmsc_cfg3 = set_field(mmsc_cfg3, MASK_MMSC_CFG3_DLM_ECC_GRAN, 0x3);
+    env->andes_csr.csrno[CSR_MMSC_CFG3] = mmsc_cfg3;
+
+    target_ulong mrvarch_cfg = env->andes_csr.csrno[CSR_MRVARCH_CFG];
+    mrvarch_cfg = set_field(mrvarch_cfg, MASK_MRVARCH_CFG_SM_VERSION, 0x1);
+    env->andes_csr.csrno[CSR_MRVARCH_CFG] = mrvarch_cfg;
+
+    target_ulong mrvarch_cfg2 = env->andes_csr.csrno[CSR_MRVARCH_CFG2];
+    mrvarch_cfg2 = set_field(mrvarch_cfg2, MASK_MRVARCH_CFG2_MRVARCH_EXT3, 0x1);
+    env->andes_csr.csrno[CSR_MRVARCH_CFG2] = mrvarch_cfg2;
+}
+
 static void rv32_andes_n45_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
@@ -4129,6 +4201,7 @@ static const TypeInfo riscv_cpu_type_infos[] = {
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A45,      MXL_RV32,  rv32_andes_a45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D23,      MXL_RV32,  rv32_andes_d23_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N25,      MXL_RV32,  rv32_andes_n25_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N225,     MXL_RV32,  rv32_andes_n225_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N45,      MXL_RV32,  rv32_andes_n45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_IBEX,           MXL_RV32,  rv32_ibex_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_SIFIVE_E31,     MXL_RV32,  rv32_sifive_e_cpu_init),
