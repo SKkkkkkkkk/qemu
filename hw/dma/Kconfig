@@ -33,3 +33,4 @@ config XLNX_CSU_DMA
 
 config ATCDMAC300
     bool
+    select STREAM

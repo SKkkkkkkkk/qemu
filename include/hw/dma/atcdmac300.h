@@ -22,6 +22,8 @@
 
 #include "hw/sysbus.h"
 #include "qom/object.h"
+#include "sysemu/dma.h"
+#include "hw/stream.h"
 
 #define TYPE_ATCDMAC300 "atcdmac300"
 OBJECT_DECLARE_SIMPLE_TYPE(ATCDMAC300State, ATCDMAC300)
@@ -46,6 +48,9 @@ OBJECT_DECLARE_SIMPLE_TYPE(ATCDMAC300State, ATCDMAC300)
 
 /* Interrupt Status Register (Offset 0x20) */
 #define ATCDMAC300_DMAC_CTRL            0x20
+
+/* Channel Abort Register (Offset 0x24) */
+#define ATCDMAC300_CHN_ABT              0x24
 
 /* Interrupt Status Register (Offset 0x30) */
 #define ATCDMAC300_INT_STATUS           0x30
@@ -79,6 +84,8 @@ OBJECT_DECLARE_SIMPLE_TYPE(ATCDMAC300State, ATCDMAC300)
 #define CHAN_CTL_SRC_BURST_SZ_MASK      0xf
 #define CHAN_CTL_SRC_ADDR_CTL_MASK      0x3
 #define CHAN_CTL_DST_ADDR_CTL_MASK      0x3
+#define CHAN_CTL_SRC_BUS_IDX_MASK       0x1
+#define CHAN_CTL_DST_BUS_IDX_MASK       0x1
 
 #define ATCDMAC300_CHAN_CTL             0x40
 #define ATCDMAC300_CHAN_TRAN_SZ         0x44
@@ -96,10 +103,16 @@ OBJECT_DECLARE_SIMPLE_TYPE(ATCDMAC300State, ATCDMAC300)
 #define ATCDMAC300_MAX_BURST_SIZE       1024
 #define ATCDMAC300_MAX_CHAN             0x8
 
+#define AXI_BURST_TYPE_FIX              0
+#define AXI_BURST_TYPE_INC              1
+#define AXI_BURST_INC_LEN_MAX           255
+#define AXI_BURST_FIX_LEN_MAX           15
+#define AXI_BOUNDARY                    0x1000
+
 #define PER_CHAN_OFFSET                 0x20
 #define ATCDMAC300_FIRST_CHAN_BASE      ATCDMAC300_CHAN_CTL
 #define ATCDMAC300_GET_CHAN(reg)        (((reg - ATCDMAC300_FIRST_CHAN_BASE) / \
-                                            PER_CHAN_OFFSET))
+                                           PER_CHAN_OFFSET))
 #define ATCDMAC300_GET_OFF(reg, ch)     (reg - (ch * PER_CHAN_OFFSET))
 
 typedef struct {
@@ -140,9 +153,21 @@ struct ATCDMAC300State {
     uint32_t ChEN;
 
     ATCDMAC300Chan chan[ATCDMAC300_MAX_CHAN];
+
+    /* To support iopmp */
+    AddressSpace *iopmp_as;
+    StreamSink *transaction_info_sink;
+    /* Source id for 2 bus interfaces */
+    uint32_t inf_sid[2];
+
+    QemuThread thread;
 };
 
 void atcdmac300_create(ATCDMAC300State *atcdmac, const char *name,
-                 hwaddr addr, hwaddr mmio_size, qemu_irq irq);
+                       hwaddr addr, hwaddr mmio_size, qemu_irq irq);
+
+void atcdmac300_connect_iopmp(DeviceState *dev, AddressSpace *iopmp_as,
+                              StreamSink *transaction_info_sink,
+                              uint32_t inf0_sid, uint32_t inf1_sid);
 
 #endif /* ATCDMAC300_H */

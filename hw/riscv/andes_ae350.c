@@ -564,6 +564,12 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
 
     /* CPU connect to iopmp */
     cpu_connect_iopmp(&s->cpus, MEMORY_REGION(&s->iopmp_dispatcher.iommu));
+
+    /* DMA connect to iopmp */
+    atcdmac300_connect_iopmp(DEVICE(&s->dma),
+        &s->iopmp_dispatcher.dispatcher_as,
+        (StreamSink *)&(s->iopmp_dispatcher.transaction_info_sink),
+        ANDES_AE350_DMAC_INF0_IOPMP_SID, ANDES_AE350_DMAC_INF1_IOPMP_SID);
 }
 
 static void andes_ae350_soc_instance_init(Object *obj)
