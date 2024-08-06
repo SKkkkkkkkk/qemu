@@ -634,18 +634,6 @@ static RISCVException sdtrig_hcontext(CPURISCVState *env, int csrno)
 
     return RISCV_EXCP_NONE;
 }
-
-static RISCVException sdtrig_mcontext(CPURISCVState *env, int csrno)
-{
-    /* Sdtrig says mcontext must be implemented if hcontext is implemented. */
-    if (riscv_cpu_cfg(env)->debug &&
-        (riscv_cpu_cfg(env)->ext_sdtrig_hcontext ||
-         riscv_cpu_cfg(env)->ext_sdtrig_mcontext)) {
-        return RISCV_EXCP_NONE;
-    }
-
-    return RISCV_EXCP_ILLEGAL_INST;
-}
 #endif
 
 static RISCVException seed(CPURISCVState *env, int csrno)
@@ -5472,8 +5460,7 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
                          write_scontext                                  },
     [CSR_HCONTEXT]  =  { "hcontext", sdtrig_hcontext,      read_hcontext,
                          write_hcontext                                  },
-    [CSR_MCONTEXT]  =  { "mcontext", sdtrig_mcontext,      read_mcontext,
-                         write_mcontext                                  },
+    [CSR_MCONTEXT]  =  { "mcontext", debug, read_mcontext, write_mcontext },
 
     /* User Pointer Masking */
     [CSR_UMTE]    =    { "umte",    pointer_masking, read_umte,  write_umte },

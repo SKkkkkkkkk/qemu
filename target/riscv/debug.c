@@ -265,12 +265,6 @@ static target_ulong textra_validate(CPURISCVState *env, target_ulong tdata3)
         mhselect_new = mhselect_no_h[mhselect];
     }
 
-    if ((mhselect_new == 1 || mhselect_new == 4 || mhselect_new == 5) &&
-        !riscv_cpu_cfg(env)->ext_sdtrig_mcontext) {
-        /* 1, 4, 5 are only illegal when CSR mcontext is implemented. */
-        mhselect_new = 0;
-    }
-
     if (mhselect_new == 0) {
         /* Hardwire mhvalue to 0 since mhselect is 0. */
         mhvalue_new = 0;

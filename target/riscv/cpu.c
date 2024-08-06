@@ -1381,7 +1381,6 @@ static void rv32_andes_d23_cpu_init(Object *obj)
 
     /* Debug sdtrig extension optional CSR */
     cfg->ext_sdtrig_tcontrol = true;
-    cfg->ext_sdtrig_mcontext = true;
 
     /* smePMP */
     cfg->pmp = true;
@@ -1438,7 +1437,6 @@ static void rv32_andes_n25_cpu_init(Object *obj)
 
     /* Debug sdtrig extension optional CSR */
     cfg->ext_sdtrig_tcontrol = true;
-    cfg->ext_sdtrig_mcontext = true;
 
     /* Disable unsupported extensions which are enabled by default */
     cfg->ext_zihintpause = false;
@@ -1468,7 +1466,6 @@ static void rv32_andes_n225_cpu_init(Object *obj)
 
     /* Enable supported extensions */
     cfg->ext_sdtrig_tcontrol = true;
-    cfg->ext_sdtrig_mcontext = true;
     cfg->ext_zba = true;
     cfg->ext_zbb = true;
     cfg->ext_zbc = true;
@@ -2748,7 +2745,6 @@ const RISCVCPUMultiExtConfig riscv_cpu_extensions[] = {
     MULTI_EXT_CFG_BOOL("sdtrig_tcontrol", ext_sdtrig_tcontrol, false),
     MULTI_EXT_CFG_BOOL("sdtrig_scontext", ext_sdtrig_scontext, false),
     MULTI_EXT_CFG_BOOL("sdtrig_hcontext", ext_sdtrig_hcontext, false),
-    MULTI_EXT_CFG_BOOL("sdtrig_mcontext", ext_sdtrig_mcontext, false),
 
     DEFINE_PROP_END_OF_LIST(),
 };
