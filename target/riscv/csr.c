@@ -4476,9 +4476,7 @@ static RISCVException write_hcontext(CPURISCVState *env, int csrno,
 static RISCVException read_mcontext(CPURISCVState *env, int csrno,
                                     target_ulong *val)
 {
-    bool rv32 = riscv_cpu_mxl(env) == MXL_RV32 ? true : false;
-
-    *val = env->mcontext & (rv32 ? MCONTEXT32 : MCONTEXT64);
+    *val = env->mcontext;
     return RISCV_EXCP_NONE;
 }
 
@@ -4486,8 +4484,17 @@ static RISCVException write_mcontext(CPURISCVState *env, int csrno,
                                      target_ulong val)
 {
     bool rv32 = riscv_cpu_mxl(env) == MXL_RV32 ? true : false;
+    int32_t mask;
 
-    env->mcontext = val & (rv32 ? MCONTEXT32 : MCONTEXT64);
+    if (riscv_has_ext(env, RVH)) {
+        /* Spec suggest 7-bit for RV32 and 14-bit for RV64 w/ H extension */
+        mask = rv32 ? MCONTEXT32_HCONTEXT : MCONTEXT64_HCONTEXT;
+    } else {
+        /* Spec suggest 6-bit for RV32 and 13-bit for RV64 w/o H extension */
+        mask = rv32 ? MCONTEXT32 : MCONTEXT64;
+    }
+
+    env->mcontext = val & mask;
     return RISCV_EXCP_NONE;
 }
 
