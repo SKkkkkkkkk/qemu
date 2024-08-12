@@ -606,34 +606,6 @@ static RISCVException sdtrig_tcontrol(CPURISCVState *env, int csrno)
 
     return RISCV_EXCP_ILLEGAL_INST;
 }
-
-static RISCVException sdtrig_scontext(CPURISCVState *env, int csrno)
-{
-    if (riscv_cpu_cfg(env)->debug && riscv_cpu_cfg(env)->ext_sdtrig_scontext) {
-        return RISCV_EXCP_NONE;
-    }
-
-    RISCVException ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
-    if (ret != RISCV_EXCP_NONE) {
-        return ret;
-    }
-
-    return RISCV_EXCP_NONE;
-}
-
-static RISCVException sdtrig_hcontext(CPURISCVState *env, int csrno)
-{
-    if (riscv_cpu_cfg(env)->debug && riscv_cpu_cfg(env)->ext_sdtrig_hcontext) {
-        return RISCV_EXCP_NONE;
-    }
-
-    RISCVException ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
-    if (ret != RISCV_EXCP_NONE) {
-        return ret;
-    }
-
-    return RISCV_EXCP_NONE;
-}
 #endif
 
 static RISCVException seed(CPURISCVState *env, int csrno)
@@ -4434,42 +4406,14 @@ static RISCVException write_scontext(CPURISCVState *env, int csrno,
 {
     RISCVException ret;
     bool rv32 = riscv_cpu_mxl(env) == MXL_RV32 ? true : false;
+    uint64_t mask = rv32 ? SCONTEXT32 : SCONTEXT64;
 
     ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
     if (ret != RISCV_EXCP_NONE) {
         return ret;
     }
 
-    env->scontext = val & (rv32 ? SCONTEXT32 : SCONTEXT64);
-    return RISCV_EXCP_NONE;
-}
-
-static RISCVException read_hcontext(CPURISCVState *env, int csrno,
-                                    target_ulong *val)
-{
-    RISCVException ret;
-
-    ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
-    if (ret != RISCV_EXCP_NONE) {
-        return ret;
-    }
-
-    *val = env->mcontext;
-    return RISCV_EXCP_NONE;
-}
-
-static RISCVException write_hcontext(CPURISCVState *env, int csrno,
-                                     target_ulong val)
-{
-    RISCVException ret;
-    bool rv32 = riscv_cpu_mxl(env) == MXL_RV32 ? true : false;
-
-    ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
-    if (ret != RISCV_EXCP_NONE) {
-        return ret;
-    }
-
-    env->mcontext = val & (rv32 ? MCONTEXT32_HCONTEXT : MCONTEXT64_HCONTEXT);
+    env->scontext = val & mask;
     return RISCV_EXCP_NONE;
 }
 
@@ -4496,6 +4440,32 @@ static RISCVException write_mcontext(CPURISCVState *env, int csrno,
 
     env->mcontext = val & mask;
     return RISCV_EXCP_NONE;
+}
+
+static RISCVException read_hcontext(CPURISCVState *env, int csrno,
+                                    target_ulong *val)
+{
+    RISCVException ret;
+
+    ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    return read_mcontext(env, csrno, val);
+}
+
+static RISCVException write_hcontext(CPURISCVState *env, int csrno,
+                                     target_ulong val)
+{
+    RISCVException ret;
+
+    ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    return write_mcontext(env, csrno, val);
 }
 
 /*
@@ -5463,10 +5433,8 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
     [CSR_TINFO]     =  { "tinfo",    debug, read_tinfo,    write_ignore  },
     [CSR_TCONTROL]  =  { "tcontrol", sdtrig_tcontrol,      read_tcontrol,
                          write_tcontrol                                  },
-    [CSR_SCONTEXT]  =  { "scontext", sdtrig_scontext,      read_scontext,
-                         write_scontext                                  },
-    [CSR_HCONTEXT]  =  { "hcontext", sdtrig_hcontext,      read_hcontext,
-                         write_hcontext                                  },
+    [CSR_SCONTEXT]  =  { "scontext", debug, read_scontext, write_scontext },
+    [CSR_HCONTEXT]  =  { "hcontext", debug, read_hcontext, write_hcontext },
     [CSR_MCONTEXT]  =  { "mcontext", debug, read_mcontext, write_mcontext },
 
     /* User Pointer Masking */

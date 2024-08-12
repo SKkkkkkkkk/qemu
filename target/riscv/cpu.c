@@ -2743,8 +2743,6 @@ const RISCVCPUMultiExtConfig riscv_cpu_extensions[] = {
 
     /* Optional CSR of sdtrig extension */
     MULTI_EXT_CFG_BOOL("sdtrig_tcontrol", ext_sdtrig_tcontrol, false),
-    MULTI_EXT_CFG_BOOL("sdtrig_scontext", ext_sdtrig_scontext, false),
-    MULTI_EXT_CFG_BOOL("sdtrig_hcontext", ext_sdtrig_hcontext, false),
 
     DEFINE_PROP_END_OF_LIST(),
 };

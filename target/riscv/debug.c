@@ -277,11 +277,6 @@ static target_ulong textra_validate(CPURISCVState *env, target_ulong tdata3)
         sselect_new = 0;
     }
 
-    if ((sselect_new == 1) && !riscv_cpu_cfg(env)->ext_sdtrig_scontext) {
-        /* 1 is only illegal when CSR scontext is implemented. */
-        sselect_new = 0;
-    }
-
     if (sselect_new == 0) {
         /* Hardwire svalue to 0 since sselect is 0 */
         svalue_new = 0;
