@@ -35,9 +35,12 @@
 /* For rapid-k model MAX_ENTRY_NUM = MD * K */
 #define IOPMP_MAX_ENTRY_NUM            (IOPMP_MAX_MD_NUM * IOPMP_MAX_K_NUM)
 
-/* config for 20240312-A45_Bigorca_IOPMP_60Mhz */
+/*
+ * Configurations for a45_fxc7k410t_c102_ae350_c1_bigorca_60Mhz_20240618.2000
+ * and AndeShape ATCIOPMP300 Data Sheet Rev.1.0
+ */
 #define IOPMP_MD_NUM                   8
-#define IOPMP_SID_NUM                  8
+#define IOPMP_SID_NUM                  16
 #define CFG_IOPMP_MODEL_K              6
 #define IOPMP_ENTRY_NUM                (IOPMP_MD_NUM * CFG_IOPMP_MODEL_K)
 #define CFG_TOR_EN                     1
@@ -46,10 +49,10 @@
 #define CFG_PROG_PRIENT                0
 #define CFG_PRIO_ENTRY                 IOPMP_ENTRY_NUM
 
-#define VENDER_VIRT                    0
-#define SPECVER_1_0_0_DRAFT3           3
+#define VENDER_ANDES                   0
+#define SPECVER_1_0_0_DRAFT3           0
 
-#define IMPID_1_0_0_DRAFT3_0           10030
+#define IMPID_ATCIOPMP300              0x00303000
 
 #define RRE_BUS_ERROR                  0
 #define RRE_DECODE_ERROR               1

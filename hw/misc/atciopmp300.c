@@ -281,11 +281,11 @@ static MemTxResult atciopmp300_read(void *opaque, hwaddr addr, uint64_t *data,
     MemTxResult tx_result = MEMTX_OK;
     switch (addr) {
     case A_VERSION:
-        rz = VENDER_VIRT << R_VERSION_VENDOR_SHIFT |
+        rz = VENDER_ANDES << R_VERSION_VENDOR_SHIFT |
              SPECVER_1_0_0_DRAFT3 << R_VERSION_SPECVER_SHIFT;
         break;
     case A_IMP:
-        rz = IMPID_1_0_0_DRAFT3_0;
+        rz = IMPID_ATCIOPMP300;
         break;
     case A_HWCFG0:
         rz = s->md_num << R_HWCFG0_MD_NUM_SHIFT  |
