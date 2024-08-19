@@ -126,6 +126,20 @@ enum {
     SIZE_NUM = 16
 };
 
+/* match conditions */
+enum {
+    MATCH_EQUAL = 0,
+    MATCH_NAPOT = 1,
+    MATCH_GE = 2,
+    MATCH_LT = 3,
+    MATCH_MASK_LOW = 4,
+    MATCH_MASK_HIGH = 5,
+    MATCH_NOT_EQUAL = 8,
+    MATCH_NOT_NAPOT = 9,
+    MATCH_NOT_MASK_LOW = 12,
+    MATCH_NOT_MASK_HIGH = 13
+};
+
 /* itrigger filed masks */
 #define ITRIGGER_ACTION       0x3f
 #define ITRIGGER_U            BIT(6)

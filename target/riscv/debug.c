@@ -414,6 +414,28 @@ static uint32_t type2_breakpoint_size(CPURISCVState *env, target_ulong ctrl)
     return (sizehi << 2) | sizelo;
 }
 
+static void type2_breakpoint_decode_napot(CPURISCVState *env,
+                                          target_ulong tdata2,
+                                          target_ulong *addr,
+                                          target_ulong *length)
+{
+    target_ulong sa, ea;
+
+    sa = tdata2 & (tdata2 + 1);
+    ea = tdata2 | (tdata2 + 1);
+
+    *addr = sa;
+    *length = ea - sa + 1;
+}
+
+static uint32_t type2_breakpoint_match(CPURISCVState *env, target_ulong ctrl)
+{
+    uint32_t match = 0;
+
+    match = extract32(ctrl, 7, 4);
+    return match;
+}
+
 static inline bool type2_breakpoint_enabled(target_ulong ctrl)
 {
     bool mode = !!(ctrl & (TYPE2_U | TYPE2_S | TYPE2_M));
@@ -426,18 +448,26 @@ static target_ulong type2_mcontrol_validate(CPURISCVState *env,
                                             target_ulong ctrl)
 {
     target_ulong val;
-    uint32_t size;
+    uint32_t size, match;
 
     /* validate the generic part first */
     val = tdata1_validate(env, ctrl, TRIGGER_TYPE_AD_MATCH);
 
     /* validate unimplemented (always zero) bits */
-    warn_always_zero_bit(ctrl, TYPE2_MATCH, "match");
     warn_always_zero_bit(ctrl, TYPE2_CHAIN, "chain");
     warn_always_zero_bit(ctrl, TYPE2_ACTION, "action");
     warn_always_zero_bit(ctrl, TYPE2_TIMING, "timing");
     warn_always_zero_bit(ctrl, TYPE2_SELECT, "select");
     warn_always_zero_bit(ctrl, TYPE2_HIT, "hit");
+
+    /* validate match encoding */
+    match = type2_breakpoint_match(env, ctrl);
+    if (match == MATCH_EQUAL || match == MATCH_NAPOT) {
+        val |= (ctrl & TYPE2_MATCH);
+    } else {
+        qemu_log_mask(LOG_UNIMP, "match condition %d is not supported, using "
+                                 "MATCH_EQUAL\n", match);
+    }
 
     /* validate size encoding */
     size = type2_breakpoint_size(env, ctrl);
@@ -462,10 +492,11 @@ static void type2_breakpoint_insert(CPURISCVState *env, target_ulong index)
 {
     target_ulong ctrl = env->tdata1[index];
     target_ulong addr = env->tdata2[index];
+    target_ulong length;
     bool enabled = type2_breakpoint_enabled(ctrl);
     CPUState *cs = env_cpu(env);
     int flags = BP_CPU | BP_STOP_BEFORE_ACCESS;
-    uint32_t size;
+    uint32_t size, match;
 
     if (!enabled) {
         return;
@@ -483,13 +514,26 @@ static void type2_breakpoint_insert(CPURISCVState *env, target_ulong index)
     }
 
     if (flags & BP_MEM_ACCESS) {
-        size = type2_breakpoint_size(env, ctrl);
-        if (size != 0) {
-            cpu_watchpoint_insert(cs, addr, size, flags,
+        match = type2_breakpoint_match(env, ctrl);
+        switch (match) {
+        case MATCH_EQUAL:
+            size = type2_breakpoint_size(env, ctrl);
+            if (size != 0) {
+                cpu_watchpoint_insert(cs, addr, size, flags,
+                                      &env->cpu_watchpoint[index]);
+            } else {
+                cpu_watchpoint_insert(cs, addr, 8, flags,
+                                      &env->cpu_watchpoint[index]);
+            }
+            break;
+        case MATCH_NAPOT:
+            type2_breakpoint_decode_napot(env, env->tdata2[index],
+                                          &addr, &length);
+            cpu_watchpoint_insert(cs, addr, length, flags,
                                   &env->cpu_watchpoint[index]);
-        } else {
-            cpu_watchpoint_insert(cs, addr, 8, flags,
-                                  &env->cpu_watchpoint[index]);
+            break;
+        default:
+            g_assert_not_reached();
         }
     }
 }
@@ -545,6 +589,28 @@ static void type2_reg_write(CPURISCVState *env, target_ulong index,
 
 /* type 6 trigger */
 
+static void type6_breakpoint_decode_napot(CPURISCVState *env,
+                                          target_ulong tdata2,
+                                          target_ulong *addr,
+                                          target_ulong *length)
+{
+    target_ulong sa, ea;
+
+    sa = tdata2 & (tdata2 + 1);
+    ea = tdata2 | (tdata2 + 1);
+
+    *addr = sa;
+    *length = ea - sa + 1;
+}
+
+static uint32_t type6_breakpoint_match(CPURISCVState *env, target_ulong ctrl)
+{
+    uint32_t match = 0;
+
+    match = extract32(ctrl, 7, 4);
+    return match;
+}
+
 static inline bool type6_breakpoint_enabled(target_ulong ctrl)
 {
     bool mode = !!(ctrl & (TYPE6_VU | TYPE6_VS | TYPE6_U | TYPE6_S | TYPE6_M));
@@ -557,18 +623,26 @@ static target_ulong type6_mcontrol6_validate(CPURISCVState *env,
                                              target_ulong ctrl)
 {
     target_ulong val;
-    uint32_t size;
+    uint32_t size, match;
 
     /* validate the generic part first */
     val = tdata1_validate(env, ctrl, TRIGGER_TYPE_AD_MATCH6);
 
     /* validate unimplemented (always zero) bits */
-    warn_always_zero_bit(ctrl, TYPE6_MATCH, "match");
     warn_always_zero_bit(ctrl, TYPE6_CHAIN, "chain");
     warn_always_zero_bit(ctrl, TYPE6_ACTION, "action");
     warn_always_zero_bit(ctrl, TYPE6_TIMING, "timing");
     warn_always_zero_bit(ctrl, TYPE6_SELECT, "select");
     warn_always_zero_bit(ctrl, TYPE6_HIT, "hit");
+
+    /* validate match encoding */
+    match = type6_breakpoint_match(env, ctrl);
+    if (match == MATCH_EQUAL || match == MATCH_NAPOT) {
+        val |= (ctrl & TYPE6_MATCH);
+    } else {
+        qemu_log_mask(LOG_UNIMP, "match condition %d is not supported, using "
+                                 "MATCH_EQUAL\n", match);
+    }
 
     /* validate size encoding */
     size = extract32(ctrl, 16, 4);
@@ -590,10 +664,11 @@ static void type6_breakpoint_insert(CPURISCVState *env, target_ulong index)
 {
     target_ulong ctrl = env->tdata1[index];
     target_ulong addr = env->tdata2[index];
+    target_ulong length;
     bool enabled = type6_breakpoint_enabled(ctrl);
     CPUState *cs = env_cpu(env);
     int flags = BP_CPU | BP_STOP_BEFORE_ACCESS;
-    uint32_t size;
+    uint32_t size, match;
 
     if (!enabled) {
         return;
@@ -612,13 +687,26 @@ static void type6_breakpoint_insert(CPURISCVState *env, target_ulong index)
     }
 
     if (flags & BP_MEM_ACCESS) {
-        size = extract32(ctrl, 16, 4);
-        if (size != 0) {
-            cpu_watchpoint_insert(cs, addr, size, flags,
+        match = type6_breakpoint_match(env, ctrl);
+        switch (match) {
+        case MATCH_EQUAL:
+            size = extract32(ctrl, 16, 4);
+            if (size != 0) {
+                cpu_watchpoint_insert(cs, addr, size, flags,
+                                      &env->cpu_watchpoint[index]);
+            } else {
+                cpu_watchpoint_insert(cs, addr, 8, flags,
+                                      &env->cpu_watchpoint[index]);
+            }
+            break;
+        case MATCH_NAPOT:
+            type6_breakpoint_decode_napot(env, env->tdata2[index],
+                                          &addr, &length);
+            cpu_watchpoint_insert(cs, addr, length, flags,
                                   &env->cpu_watchpoint[index]);
-        } else {
-            cpu_watchpoint_insert(cs, addr, 8, flags,
-                                  &env->cpu_watchpoint[index]);
+            break;
+        default:
+            g_assert_not_reached();
         }
     }
 }
@@ -1136,7 +1224,8 @@ bool riscv_cpu_debug_check_watchpoint(CPUState *cs, CPUWatchpoint *wp)
     RISCVCPU *cpu = RISCV_CPU(cs);
     CPURISCVState *env = &cpu->env;
     target_ulong ctrl;
-    target_ulong addr;
+    target_ulong addr, length;
+    uint32_t match;
     int trigger_type;
     int flags;
     int i;
@@ -1153,6 +1242,7 @@ bool riscv_cpu_debug_check_watchpoint(CPUState *cs, CPUWatchpoint *wp)
             ctrl = env->tdata1[i];
             addr = env->tdata2[i];
             flags = 0;
+            match = type2_breakpoint_match(env, ctrl);
 
             if (ctrl & TYPE2_LOAD) {
                 flags |= BP_MEM_READ;
@@ -1161,14 +1251,27 @@ bool riscv_cpu_debug_check_watchpoint(CPUState *cs, CPUWatchpoint *wp)
                 flags |= BP_MEM_WRITE;
             }
 
-            if ((wp->flags & flags) && (wp->vaddr == addr)) {
-                return true;
+            switch (match) {
+            case MATCH_EQUAL:
+                if ((wp->flags & flags) && (wp->vaddr == addr)) {
+                    return true;
+                }
+                break;
+            case MATCH_NAPOT:
+                type2_breakpoint_decode_napot(env, env->tdata2[i],
+                                              &addr, &length);
+                if ((wp->flags & flags) &&
+                    (wp->vaddr == addr) && (wp->len == length)) {
+                    return true;
+                }
+                break;
             }
             break;
         case TRIGGER_TYPE_AD_MATCH6:
             ctrl = env->tdata1[i];
             addr = env->tdata2[i];
             flags = 0;
+            match = type6_breakpoint_match(env, ctrl);
 
             if (ctrl & TYPE6_LOAD) {
                 flags |= BP_MEM_READ;
@@ -1177,8 +1280,20 @@ bool riscv_cpu_debug_check_watchpoint(CPUState *cs, CPUWatchpoint *wp)
                 flags |= BP_MEM_WRITE;
             }
 
-            if ((wp->flags & flags) && (wp->vaddr == addr)) {
-                return true;
+            switch (match) {
+            case MATCH_EQUAL:
+                if ((wp->flags & flags) && (wp->vaddr == addr)) {
+                    return true;
+                }
+                break;
+            case MATCH_NAPOT:
+                type6_breakpoint_decode_napot(env, env->tdata2[i],
+                                              &addr, &length);
+                if ((wp->flags & flags) &&
+                    (wp->vaddr == addr) && (wp->len == length)) {
+                    return true;
+                }
+                break;
             }
             break;
         default:
