@@ -706,7 +706,7 @@ static bool trans_vfpmadb_vf(DisasContext *ctx, arg_vfpmadb_vf *a)
 }
 
 /* Andes V5 Vector Dot Product extension */
-#define GEN_OPIVV_WIDEN_4_TRANS(NAME, CHECK) \
+#define GEN_OPIVV_4_TRANS(NAME, CHECK) \
 static bool trans_##NAME(DisasContext *ctx, arg_rmrr_andes *a) \
 {                                                            \
     REQUIRE_VDOT;                                            \
@@ -721,9 +721,9 @@ static bool trans_##NAME(DisasContext *ctx, arg_rmrr_andes *a) \
     return false;                                            \
 }
 
-GEN_OPIVV_WIDEN_4_TRANS(vd4dots_vv, opivv_widen_check)
-GEN_OPIVV_WIDEN_4_TRANS(vd4dotu_vv, opivv_widen_check)
-GEN_OPIVV_WIDEN_4_TRANS(vd4dotsu_vv, opivv_widen_check)
+GEN_OPIVV_4_TRANS(vd4dots_vv, opivv_check)
+GEN_OPIVV_4_TRANS(vd4dotu_vv, opivv_check)
+GEN_OPIVV_4_TRANS(vd4dotsu_vv, opivv_check)
 
 /* Andes V5 Vector Small INT Handling extension */
 bool vsih_check(DisasContext *ctx)
