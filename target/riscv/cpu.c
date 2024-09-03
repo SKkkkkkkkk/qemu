@@ -1391,6 +1391,9 @@ static void rv32_andes_d23_cpu_init(Object *obj)
     cfg->pmp = true;
     cfg->ext_smepmp = true;
 
+    /* Count Overflow and Mode-Based Filtering */
+    cfg->ext_sscofpmf = true;
+
     /* CSR_MMSC_CFG = 0xe0897039 */
     target_ulong mmsc_cfg = env->andes_csr.csrno[CSR_MMSC_CFG];
     mmsc_cfg = set_field(mmsc_cfg, MASK_MMSC_CFG_ECC, 1);
