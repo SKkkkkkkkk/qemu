@@ -5806,8 +5806,8 @@ static void do_##NAME(void *vd, void *vs1, void *vs2, int i)            \
     int j;                                                              \
     TD sum = 0;                                                         \
     for (j = 0; j < 4; j++) {                                           \
-        TX1 s1 = *((T1 *)vs1 + HS1(i + j));                             \
-        TX2 s2 = *((T2 *)vs2 + HS2(i + j));                             \
+        TX1 s1 = *((T1 *)vs1 + HS1(i*4 + j));                           \
+        TX2 s2 = *((T2 *)vs2 + HS2(i*4 + j));                           \
         sum = OP2(s2, s1, sum);                                         \
     }                                                                   \
     TD d = *((TD *)vd + HD(i));                                         \
