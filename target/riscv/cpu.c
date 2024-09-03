@@ -1070,6 +1070,11 @@ static void rv64_andes_nx25_cpu_init(Object *obj)
     cfg->marchid = ANDES_CPUID_NX25;
 }
 
+static void rv64_andes_nx25f_cpu_init(Object *obj)
+{
+    rv64_andes_nx25_cpu_init(obj);
+}
+
 static void rv64_andes_nx27v_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
@@ -1448,6 +1453,16 @@ static void rv32_andes_n25_cpu_init(Object *obj)
     cfg->ext_zicboz = false;
 }
 
+static void rv32_andes_d25f_cpu_init(Object *obj)
+{
+    rv32_andes_n25_cpu_init(obj);
+}
+
+static void rv32_andes_n25f_cpu_init(Object *obj)
+{
+    rv32_andes_n25_cpu_init(obj);
+}
+
 static void rv32_andes_n225_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
@@ -1531,6 +1546,11 @@ static void rv32_andes_n45_cpu_init(Object *obj)
 
     /* Set CPU ID */
     cfg->marchid = ANDES_CPUID_N45;
+}
+
+static void rv32_andes_d45_cpu_init(Object *obj)
+{
+    rv32_andes_n45_cpu_init(obj);
 }
 
 static void rv32i_bare_cpu_init(Object *obj)
@@ -4194,7 +4214,10 @@ static const TypeInfo riscv_cpu_type_infos[] = {
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A27,      MXL_RV32,  rv32_andes_a27_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A45,      MXL_RV32,  rv32_andes_a45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D23,      MXL_RV32,  rv32_andes_d23_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D25F,     MXL_RV32,  rv32_andes_d25f_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D45,      MXL_RV32,  rv32_andes_d45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N25,      MXL_RV32,  rv32_andes_n25_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N25F,     MXL_RV32,  rv32_andes_n25f_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N225,     MXL_RV32,  rv32_andes_n225_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N45,      MXL_RV32,  rv32_andes_n45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_IBEX,           MXL_RV32,  rv32_ibex_cpu_init),
@@ -4218,6 +4241,7 @@ static const TypeInfo riscv_cpu_type_infos[] = {
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX45MPV,  MXL_RV64,  rv64_andes_ax45mpv_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX65,     MXL_RV64,  rv64_andes_ax65_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX25,     MXL_RV64,  rv64_andes_nx25_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX25F,    MXL_RV64,  rv64_andes_nx25f_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX27V,    MXL_RV64,  rv64_andes_nx27v_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX45,     MXL_RV64,  rv64_andes_nx45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX45V,    MXL_RV64,  rv64_andes_nx45v_cpu_init),
