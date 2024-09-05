@@ -1456,9 +1456,14 @@ static void rv32_andes_n25_cpu_init(Object *obj)
     cfg->ext_zicboz = false;
 }
 
-static void rv32_andes_d25f_cpu_init(Object *obj)
+static void rv32_andes_d25_cpu_init(Object *obj)
 {
     rv32_andes_n25_cpu_init(obj);
+}
+
+static void rv32_andes_d25f_cpu_init(Object *obj)
+{
+    rv32_andes_d25_cpu_init(obj);
 }
 
 static void rv32_andes_n25f_cpu_init(Object *obj)
@@ -4217,6 +4222,7 @@ static const TypeInfo riscv_cpu_type_infos[] = {
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A27,      MXL_RV32,  rv32_andes_a27_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A45,      MXL_RV32,  rv32_andes_a45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D23,      MXL_RV32,  rv32_andes_d23_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D25,      MXL_RV32,  rv32_andes_d25_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D25F,     MXL_RV32,  rv32_andes_d25f_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D45,      MXL_RV32,  rv32_andes_d45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N25,      MXL_RV32,  rv32_andes_n25_cpu_init),
