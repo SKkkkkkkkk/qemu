@@ -435,6 +435,7 @@ static const TypeInfo andes_plic_info = {
     .parent        = TYPE_RISCV_PLIC,
     .instance_size = sizeof(AndesPLICState),
     .class_init    = andes_plic_class_init,
+    .class_size    = sizeof(AndesPLICClass),
 };
 
 static void andes_plic_register_types(void)
