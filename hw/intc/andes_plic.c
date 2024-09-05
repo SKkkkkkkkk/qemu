@@ -399,18 +399,7 @@ static void andes_plic_reset(DeviceState *dev)
     RISCVPLICState *riscv_plic = RISCV_PLIC(andes_plic);
     AndesPLICClass *andes_plic_class = ANDES_PLIC_GET_CLASS(andes_plic);
 
-    if (andes_plic_class->parent_reset) {
-#ifdef __WIN64
-        /*
-         * TODO: this is a workaround, we should find the root cause later.
-         * The higher bytes of pointer parent_reset is modified occasionally
-         * under windows. So we clear higher bytes to get the original address.
-         */
-        uint64_t *pfp = (uint64_t *)&andes_plic_class->parent_reset;
-        *pfp &= 0xFFFFFFFFFFFFULL;
-#endif
-        andes_plic_class->parent_reset(dev);
-    }
+    andes_plic_class->parent_reset(dev);
     memset(andes_plic->level, 0, sizeof(uint32_t) *
            riscv_plic->bitfield_words);
     memset(andes_plic->gw_state, 0, sizeof(uint32_t) *
