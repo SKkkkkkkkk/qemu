@@ -129,8 +129,7 @@ int gdb_handle_query_rcmd_andes_query(GArray *params, void *user_ctx)
     /* nds query target only can be 'SID' or 'OCD' */
     if (!g_strcmp0((const char *)gdbserver_state.mem_buf->data,
         NDS_QUERY_TARGET_CMD)) {
-        gdb_memtohex(gdbserver_state.str_buf,
-                     (guint8 *)NDS_QUERY_TARGET, strlen(NDS_QUERY_TARGET));
+        g_string_assign(gdbserver_state.str_buf, NDS_QUERY_TARGET);
         gdb_put_strbuf();
         return 0;
     }
@@ -139,7 +138,7 @@ int gdb_handle_query_rcmd_andes_query(GArray *params, void *user_ctx)
         NDS_QUERY_ENDIAN_CMD)) {
         snprintf(reply, sizeof(reply), "%s: %s",
                  NDS_QUERY_TARGET, NDS_QUERY_ENDIAN);
-        gdb_memtohex(gdbserver_state.str_buf, (guint8 *)reply, strlen(reply));
+        g_string_assign(gdbserver_state.str_buf, reply);
         gdb_put_strbuf();
         return 0;
     }
