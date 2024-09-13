@@ -1254,14 +1254,12 @@ static void handle_write_mem(GArray *params, void *user_ctx)
 
     gdb_hextomem(gdbserver_state.mem_buf, gdb_get_cmd_param(params, 2)->data,
                  gdb_get_cmd_param(params, 1)->val_ull);
-    if (gdb_target_memory_rw_debug(gdbserver_state.g_cpu,
-                                   gdb_get_cmd_param(params, 0)->val_ull,
-                                   gdbserver_state.mem_buf->data,
-                                   gdbserver_state.mem_buf->len, true)) {
-        gdb_put_packet("E14");
-        return;
-    }
 
+    /* In Andes hardware, all debug writes are valid */
+    gdb_target_memory_rw_debug(gdbserver_state.g_cpu,
+                               gdb_get_cmd_param(params, 0)->val_ull,
+                               gdbserver_state.mem_buf->data,
+                               gdbserver_state.mem_buf->len, true);
     gdb_put_packet("OK");
 }
 
@@ -1281,12 +1279,13 @@ static void handle_read_mem(GArray *params, void *user_ctx)
     g_byte_array_set_size(gdbserver_state.mem_buf,
                           gdb_get_cmd_param(params, 1)->val_ull);
 
+    /* In Andes hardware, all debug reads are valid */
+    /* If the access failed, reset the value of mem_buf to 0 */
     if (gdb_target_memory_rw_debug(gdbserver_state.g_cpu,
                                    gdb_get_cmd_param(params, 0)->val_ull,
                                    gdbserver_state.mem_buf->data,
                                    gdbserver_state.mem_buf->len, false)) {
-        gdb_put_packet("E14");
-        return;
+        memset(gdbserver_state.mem_buf->data, 0, gdbserver_state.mem_buf->len);
     }
 
     gdb_memtohex(gdbserver_state.str_buf, gdbserver_state.mem_buf->data,
