@@ -24,8 +24,16 @@
 #define ANDES_ATCSMU(obj) \
     OBJECT_CHECK(AndesATCSMUState, (obj), TYPE_ANDES_ATCSMU)
 
+#define ATCSMU_NUM_PCS      11
+
 typedef struct pcs_registers {
+    uint32_t pcs_cfg;
     uint32_t pcs_scratch;
+    uint32_t pcs_misc;
+    uint32_t pcs_misc2;
+    uint32_t pcs_we;
+    uint32_t pcs_ctl;
+    uint32_t pcs_status;
 } pcs_registers;
 
 typedef struct AndesATCSMUState {
@@ -43,7 +51,7 @@ typedef struct AndesATCSMUState {
     uint32_t systemcfg;
     uint32_t smuver;
     uint32_t scratch;
-    pcs_registers pcs_regs[8];
+    pcs_registers pcs_regs[ATCSMU_NUM_PCS];
 } AndesATCSMUState;
 
 #define ATCSMU_SYSTEMVER    0x00
@@ -62,14 +70,16 @@ typedef struct AndesATCSMUState {
 #define ATCSMU_HART2_RESET_VECTOR_HI 0x68
 #define ATCSMU_HART3_RESET_VECTOR_HI 0x6C
 
-#define ATCSMU_PCS3_SCRATCH          0x84
-#define ATCSMU_PCS4_SCRATCH          0xA4
-#define ATCSMU_PCS5_SCRATCH          0xC4
-#define ATCSMU_PCS6_SCRATCH          0xE4
-#define ATCSMU_PCS7_SCRATCH          0x104
-#define ATCSMU_PCS8_SCRATCH          0x124
-#define ATCSMU_PCS9_SCRATCH          0x144
-#define ATCSMU_PCS10_SCRATCH         0x164
+#define ATCSMU_PCS0_CFG              0x80
+
+#define ATCSMU_PCS_OFFSET_CFG        0x0
+#define ATCSMU_PCS_OFFSET_SCRATCH    0x4
+#define ATCSMU_PCS_OFFSET_MISC       0x8
+#define ATCSMU_PCS_OFFSET_MISC2      0xC
+#define ATCSMU_PCS_OFFSET_WE         0x10
+#define ATCSMU_PCS_OFFSET_CTL        0x14
+#define ATCSMU_PCS_OFFSET_STATUS     0x18
+#define ATCSMU_PCS_STRIDE            0x20
 
 #define ATCSMU_HART4_RESET_VECTOR_LO 0x200
 #define ATCSMU_HART5_RESET_VECTOR_LO 0x204
@@ -98,6 +108,9 @@ typedef struct AndesATCSMUState {
 #define SMUCMD_RESET        0x3c
 #define SMUCMD_POWEROFF     0x5a
 #define SMUCMD_STANDBY      0x55
+
+/* PCSm_CTL */
+#define PCS_CTL_CMD_RESET   0x1
 
 void
 andes_atcsmu_create(AndesATCSMUState *dev, hwaddr addr, hwaddr size,

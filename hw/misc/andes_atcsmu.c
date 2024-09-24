@@ -71,6 +71,102 @@ reset_vector_write(int hartid, uint64_t value, bool data_hi)
     }
 }
 
+static uint64_t atcsmu100_pcs_read(AndesATCSMUState *smu, hwaddr addr,
+                                   unsigned size)
+{
+    unsigned int idx, offset;
+
+    if (addr & 0x3) {
+        LOGGE("%s: Bad addr %x\n", __func__, (int)addr);
+        return 0;
+    }
+
+    idx = (addr - ATCSMU_PCS0_CFG) / ATCSMU_PCS_STRIDE;
+    offset = addr - (ATCSMU_PCS0_CFG + ATCSMU_PCS_STRIDE * idx);
+    if (idx >= ATCSMU_NUM_PCS) {
+        LOGGE("%s: PCS%d is not supported\n", __func__, (int)idx);
+        return 0;
+    }
+
+    switch (offset) {
+    case ATCSMU_PCS_OFFSET_CFG:
+        return smu->pcs_regs[idx].pcs_cfg;
+    case ATCSMU_PCS_OFFSET_SCRATCH:
+        return smu->pcs_regs[idx].pcs_scratch;
+    case ATCSMU_PCS_OFFSET_MISC:
+        return smu->pcs_regs[idx].pcs_misc;
+    case ATCSMU_PCS_OFFSET_MISC2:
+        return smu->pcs_regs[idx].pcs_misc2;
+    case ATCSMU_PCS_OFFSET_WE:
+        return smu->pcs_regs[idx].pcs_we;
+    case ATCSMU_PCS_OFFSET_CTL:
+        return smu->pcs_regs[idx].pcs_ctl;
+    case ATCSMU_PCS_OFFSET_STATUS:
+        return smu->pcs_regs[idx].pcs_status;
+    default:
+        LOGGE("%s: Bad addr %x\n", __func__, (int)addr);
+        break;
+    }
+
+    return 0;
+}
+
+static void atcsmu100_pcs_write(AndesATCSMUState *smu, hwaddr addr,
+                                uint64_t value, unsigned size)
+{
+    unsigned int idx, offset;
+
+    if (addr & 0x3) {
+        LOGGE("%s: Bad addr %x\n", __func__, (int)addr);
+        return;
+    }
+
+    idx = (addr - ATCSMU_PCS0_CFG) / ATCSMU_PCS_STRIDE;
+    offset = addr - (ATCSMU_PCS0_CFG + ATCSMU_PCS_STRIDE * idx);
+    if (idx >= ATCSMU_NUM_PCS) {
+        LOGGE("%s: PCS%d is not supported\n", __func__, (int)idx);
+        return;
+    }
+
+    switch (offset) {
+    case ATCSMU_PCS_OFFSET_CFG:
+        /* PCSm_CFG is read-only */
+        break;
+    case ATCSMU_PCS_OFFSET_SCRATCH:
+        smu->pcs_regs[idx].pcs_scratch = value;
+        break;
+    case ATCSMU_PCS_OFFSET_MISC:
+        LOGGE("%s: Writing PCS%d_MISC is not supported\n", __func__, (int)idx);
+        break;
+    case ATCSMU_PCS_OFFSET_MISC2:
+        LOGGE("%s: Writing PCS%d_MISC2 is not supported\n", __func__, (int)idx);
+        break;
+    case ATCSMU_PCS_OFFSET_WE:
+        LOGGE("%s: Writing PCS%d_WE is not supported\n", __func__, (int)idx);
+        break;
+    case ATCSMU_PCS_OFFSET_CTL:
+        if (idx == 0) {
+            switch (value) {
+            case PCS_CTL_CMD_RESET: /* PCS0_CTL resets all power domain */
+                for (int i = 0; i < ATCSMU_NUM_PCS; i++) {
+                    smu->pcs_regs[i].pcs_status = 0x11;
+                }
+                qemu_system_reset_request(SHUTDOWN_CAUSE_GUEST_RESET);
+                break;
+            }
+        } else {
+            LOGGE("%s: Writing PCS%d_CTL is not supported\n",
+                  __func__, (int)idx);
+        }
+        break;
+    case ATCSMU_PCS_OFFSET_STATUS:
+        smu->pcs_regs[idx].pcs_status = value;
+        break;
+    default:
+        LOGGE("%s: Bad addr %x\n", __func__, (int)addr);
+        break;
+    }
+}
 
 static uint64_t
 andes_atcsmu_read(void *opaque, hwaddr addr, unsigned size)
@@ -114,14 +210,13 @@ andes_atcsmu_read(void *opaque, hwaddr addr, unsigned size)
             return reset_vector_read(idx, 1);
         }
         break;
-    case ATCSMU_PCS3_SCRATCH ... ATCSMU_PCS10_SCRATCH:
-        idx = (addr - ATCSMU_PCS3_SCRATCH) >> 5;
-        if ((addr & 0x1f) == 0x4) {
-            return smu->pcs_regs[idx].pcs_scratch;
-        }
-        break;
     default:
-        LOGGE("%s: Bad addr %x\n", __func__, (int)addr);
+        if (addr >= ATCSMU_PCS0_CFG &&
+            addr < (ATCSMU_PCS0_CFG + ATCSMU_PCS_STRIDE * ATCSMU_NUM_PCS)) {
+            return atcsmu100_pcs_read(smu, addr, size);
+        } else {
+            LOGGE("%s: Bad addr %x\n", __func__, (int)addr);
+        }
     }
     return 0;
 }
@@ -167,14 +262,14 @@ andes_atcsmu_write(void *opaque, hwaddr addr, uint64_t value, unsigned size)
             break;
         }
         break;
-    case ATCSMU_PCS3_SCRATCH ... ATCSMU_PCS10_SCRATCH:
-        idx = (addr - ATCSMU_PCS3_SCRATCH) >> 5;
-        if ((addr & 0x1f) == 0x4) {
-            smu->pcs_regs[idx].pcs_scratch = value;
-        }
-        break;
     default:
-        LOGGE("%s: Bad addr %x (value %x)\n", __func__, (int)addr, (int)value);
+        if (addr >= ATCSMU_PCS0_CFG &&
+            addr < (ATCSMU_PCS0_CFG + ATCSMU_PCS_STRIDE * ATCSMU_NUM_PCS)) {
+            atcsmu100_pcs_write(smu, addr, value, size);
+        } else {
+            LOGGE("%s: Bad addr %x (value %x)\n",
+                  __func__, (int)addr, (int)value);
+        }
     }
 }
 
@@ -219,10 +314,26 @@ static void andes_atcsmu_class_init(ObjectClass *klass, void *data)
     device_class_set_props(dc, andes_atcsmu_properties);
 }
 
+static void andes_atcsmu_instance_init(Object *obj)
+{
+    AndesATCSMUState *smu = ANDES_ATCSMU(obj);
+
+    for (int i = 0; i < ATCSMU_NUM_PCS; i++) {
+        smu->pcs_regs[i].pcs_cfg = 0xd;     /* Reset, Light Sleep, Deep Sleep */
+        smu->pcs_regs[i].pcs_scratch = 0;
+        smu->pcs_regs[i].pcs_misc = 0xf0000fff;
+        smu->pcs_regs[i].pcs_misc2 = 0x00003807;
+        smu->pcs_regs[i].pcs_we = 0xffffffff;
+        smu->pcs_regs[i].pcs_ctl = 0;
+        smu->pcs_regs[i].pcs_status = 0x1;  /* pd_type = Reset */
+    }
+}
+
 static const TypeInfo andes_atcsmu_info = {
     .name = TYPE_ANDES_ATCSMU,
     .parent = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(AndesATCSMUState),
+    .instance_init = andes_atcsmu_instance_init,
     .class_init = andes_atcsmu_class_init,
 };
 
