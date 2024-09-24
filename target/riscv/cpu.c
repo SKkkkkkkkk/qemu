@@ -945,7 +945,7 @@ static void rv64_andes_ax45_cpu_init(Object *obj)
     cfg->marchid = ANDES_CPUID_AX45;
 
     /* CSR_MMSC_CFG = 0x2000236005f03d */
-    cfg-> ext_zfh = true;
+    cfg->ext_zfh = true;
     env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
                                          BIT(V5_MMSC_CFG_TLB_ECC2) |
                                          BIT(V5_MMSC_CFG_ECD) |
@@ -1528,7 +1528,7 @@ static void rv32_andes_n225_cpu_init(Object *obj)
     /* CSR_MMSC_CFG = 0x80007209 */
     env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
                                          BIT(V5_MMSC_CFG_ECD) |
-                                         (V5_MMSC_CFG_ADDPMC_0) |  /* 0 addtional counters */
+                                         (V5_MMSC_CFG_ADDPMC_0) |
                                          BIT(V5_MMSC_CFG_VPLIC) |
                                          BIT(V5_MMSC_CFG_EV5PE) |
                                          BIT(V5_MMSC_CFG_LMSLVP) |

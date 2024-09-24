@@ -887,15 +887,16 @@ type_init(andes_ae350_machine_init_register_types)
 
 static Property andes_ae350_soc_property[] = {
     /* Defaults for standard extensions */
-    DEFINE_PROP_BOOL("uncacheable_alias_enable", AndesAe350SocState, uncacheable_alias_enable, false),
+    DEFINE_PROP_BOOL("uncacheable_alias_enable", AndesAe350SocState,
+                      uncacheable_alias_enable, false),
     DEFINE_PROP_UINT64("ilm_base", AndesAe350SocState, ilm_base, 0),
     DEFINE_PROP_UINT64("dlm_base", AndesAe350SocState, dlm_base, 0x200000),
     DEFINE_PROP_UINT32("ilm_size", AndesAe350SocState, ilm_size, 0x200000),
     DEFINE_PROP_UINT32("dlm_size", AndesAe350SocState, dlm_size, 0x200000),
     DEFINE_PROP_BOOL("ilm_default_enable", AndesAe350SocState,
-                     ilm_default_enable, false),
+                      ilm_default_enable, false),
     DEFINE_PROP_BOOL("dlm_default_enable", AndesAe350SocState,
-                     dlm_default_enable, false),
+                      dlm_default_enable, false),
     DEFINE_PROP_UINT64("hvm_base", AndesAe350SocState, hvm_base,
                        ANDES_HVM_BASE_DEFAULT),
     DEFINE_PROP_UINT64("hvm_size_pow_2", AndesAe350SocState, hvm_size_pow_2,
