@@ -274,6 +274,9 @@ atcwdt200_reset_timer_cb(void *opaque)
     obj = container_get(qdev_get_machine(), "/soc/atcsmu");
     AndesATCSMUState *smu_state = ANDES_ATCSMU(obj);
     smu_state->wrsr |= 0x8;
+    for (int i = 0; i < ATCSMU_NUM_PCS; i++) {
+        smu_state->pcs_regs[i].pcs_status = 0x21;
+    }
     qmp_watchdog_set_action(WATCHDOG_ACTION_RESET, NULL);
     watchdog_perform_action();
 }
