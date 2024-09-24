@@ -1550,6 +1550,39 @@ static bool validate_vm(CPURISCVState *env, target_ulong vm)
     return get_field(mode_supported, (1 << vm));
 }
 
+#include "qapi/qmp/qobject.h"
+#include "qapi/qmp/qbool.h"
+#include "qom/qom-qobject.h"
+static target_ulong get_andes_satp_mask(CPURISCVState *env)
+{
+    bool alias_enable = false;
+    Error *err = NULL;
+
+    Object *soc = object_resolve_path("/machine/soc", NULL);
+    if (soc != NULL) {
+        QObject *prop_qobj = object_property_get_qobject(
+                                 soc, "uncacheable_alias_enable", &err);
+        QBool *qbool = qobject_to(QBool, prop_qobj);
+        if (qbool != NULL) {
+            alias_enable = qbool->value;
+        }
+    }
+
+    if (alias_enable) {
+        /* only allow 21 bits of PPN field writable */
+        if (riscv_cpu_mxl(env) == MXL_RV32) {
+            /* PPN mask 0x1FFFFF, other bits are 1 */
+            return ~((target_ulong)1 << 21);
+        } else {
+            /* PPN mask 0x000001FFFFF, other bits are 1 */
+            return ~((target_ulong)0xFFFFFE << 20);
+        }
+    }
+
+    /* all bits are writable */
+    return (target_ulong)-1;
+}
+
 static target_ulong legalize_xatp(CPURISCVState *env, target_ulong old_xatp,
                                   target_ulong val)
 {
@@ -1571,7 +1604,7 @@ static target_ulong legalize_xatp(CPURISCVState *env, target_ulong old_xatp,
          * enabled avoids leaking those invalid cached mappings.
          */
         tlb_flush(env_cpu(env));
-        return val;
+        return val & get_andes_satp_mask(env);
     }
     return old_xatp;
 }

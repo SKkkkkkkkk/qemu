@@ -495,6 +495,25 @@ static QObject *get_prop_qobj_from_soc(const char *name)
     return prop_qobj;
 }
 
+static bool set_bool_to_soc_prop(const char *name, bool val)
+{
+    Object *soc = object_resolve_path("/machine/soc", NULL);
+    if (soc == NULL) {
+        return false;
+    }
+
+    Error *err = NULL;
+    QObject *prop_qobj = object_property_get_qobject(soc, name, &err);
+    QBool *qbool = qobject_to(QBool, prop_qobj);
+    if (qbool == NULL) {
+        return false;
+    }
+
+    qbool->value = val;
+
+    return object_property_set_qobject(soc, name, prop_qobj, &err);
+}
+
 static bool get_bool_from_soc_prop(const char *name, bool *val)
 {
     QObject *prop_qobj = get_prop_qobj_from_soc(name);
@@ -882,13 +901,12 @@ static void rv64_andes_ax25_cpu_init(Object *obj)
                                          BIT(V5_MMSC_CFG_EFHW) |
                                          BIT(V5_MMSC_CFG_VCCTL) |
                                          BIT(V5_MMSC_CFG_EDSP) |
-                                         BIT_ULL(V5_MMSC_CFG_RVARCH) |
-                                         /*
-                                          * enable this bit for linux PMA check
-                                          * should remove it after the
-                                          * implementation of MSB-bit mechanism
-                                          */
-                                         BIT(V5_MMSC_CFG_PPMA);
+                                         BIT_ULL(V5_MMSC_CFG_RVARCH);
+
+#ifndef CONFIG_USER_ONLY
+    /* Enable AE350 uncacheable alias region */
+    set_bool_to_soc_prop("uncacheable_alias_enable", true);
+#endif
 }
 
 static void rv64_andes_ax27_cpu_init(Object *obj)
@@ -1307,13 +1325,12 @@ static void rv32_andes_a25_cpu_init(Object *obj)
                                          BIT(V5_MMSC_CFG_EFHW) |
                                          BIT(V5_MMSC_CFG_VCCTL) |
                                          BIT(V5_MMSC_CFG_EDSP) |
-                                         BIT(V5_MMSC_CFG_MSC_EXT) |
-                                         /*
-                                          * enable this bit for linux PMA check
-                                          * should remove it after the
-                                          * implementation of MSB-bit mechanism
-                                          */
-                                         BIT(V5_MMSC_CFG_PPMA);
+                                         BIT(V5_MMSC_CFG_MSC_EXT);
+
+#ifndef CONFIG_USER_ONLY
+    /* Enable AE350 uncacheable alias region */
+    set_bool_to_soc_prop("uncacheable_alias_enable", true);
+#endif
 }
 
 static void rv32_andes_a27_cpu_init(Object *obj)

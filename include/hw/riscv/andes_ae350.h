@@ -57,6 +57,7 @@ typedef struct AndesAe350SocState {
     uint32_t dlm_size;
     bool ilm_default_enable;
     bool dlm_default_enable;
+    bool uncacheable_alias_enable;
 
     uint64_t hvm_base;
     uint64_t hvm_size_pow_2;
@@ -111,6 +112,7 @@ enum {
     ANDES_AE350_SDC,
     ANDES_AE350_SPI2,
     ANDES_AE350_VIRTIO,
+    ANDES_AE350_UNCACHEABLE_ALIAS,
     ANDES_AE350_IOPMP,
     ANDES_AE350_IOPMP_APB,
     ANDES_AE350_IOPMP_RAM,

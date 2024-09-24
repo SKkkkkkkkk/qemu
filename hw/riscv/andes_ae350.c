@@ -99,6 +99,7 @@ static const struct MemmapEntry {
     [ANDES_AE350_SDC]       = { 0xf0e00000,   0x100000 },
     [ANDES_AE350_SPI2]      = { 0xf0f00000,   0x100000 },
     [ANDES_AE350_VIRTIO]    = { 0xfe000000,     0x1000 },
+    [ANDES_AE350_UNCACHEABLE_ALIAS] = { 0x100000000, 0x100000000 },
 };
 
 static void create_fdt_iopmp(AndesAe350BoardState *bs,
@@ -412,6 +413,18 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
 
     plicsw_hart_config =
         init_hart_config(ANDES_PLICSW_HART_CONFIG, machine->smp.cpus);
+
+    /* Optional Uncacheable Alias */
+    if (s->uncacheable_alias_enable) {
+        MemoryRegion *mask_alias = g_new(MemoryRegion, 1);
+        memory_region_init_alias(mask_alias, NULL,
+                                 "riscv.andes.ae350.uncacheable_alias",
+                                 system_memory,
+                                 0, memmap[ANDES_AE350_UNCACHEABLE_ALIAS].size);
+        memory_region_add_subregion(system_memory,
+                                    memmap[ANDES_AE350_UNCACHEABLE_ALIAS].base,
+                                    mask_alias);
+    }
 
     /* Per-socket SW-PLIC */
     s->plic_sw = andes_plic_create(
@@ -874,6 +887,7 @@ type_init(andes_ae350_machine_init_register_types)
 
 static Property andes_ae350_soc_property[] = {
     /* Defaults for standard extensions */
+    DEFINE_PROP_BOOL("uncacheable_alias_enable", AndesAe350SocState, uncacheable_alias_enable, false),
     DEFINE_PROP_UINT64("ilm_base", AndesAe350SocState, ilm_base, 0),
     DEFINE_PROP_UINT64("dlm_base", AndesAe350SocState, dlm_base, 0x200000),
     DEFINE_PROP_UINT32("ilm_size", AndesAe350SocState, ilm_size, 0x200000),
