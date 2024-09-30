@@ -99,9 +99,8 @@ andes_plmt_read(void *opaque, hwaddr addr, unsigned size)
         /* %8=0:timecmp_lo, %8=4:timecmp_hi */
         size_t hartid = plmt->hart_base + ((addr - plmt->timecmp_base) >> 3);
         CPUState *cpu = qemu_get_cpu(hartid);
-        CPURISCVState *env = cpu_env(cpu);
-        if (!env) {
-            error_report("plmt: invalid timecmp hartid: %zu", hartid);
+        if (!cpu) {
+            /* retuen 0 when reading from the non-existent mtimecmpX */
         } else if ((addr & 0x7) == 0) {
             rz = plmt->timecmp[hartid] & (unsigned long)0xFFFFFFFF;
         } else if ((addr & 0x7) == 4) {
@@ -134,9 +133,8 @@ andes_plmt_write(void *opaque, hwaddr addr, uint64_t value, unsigned size)
         /* %8=0:timecmp_lo, %8=4:timecmp_hi */
         size_t hartid = plmt->hart_base + ((addr - plmt->timecmp_base) >> 3);
         CPUState *cpu = qemu_get_cpu(hartid);
-        CPURISCVState *env = cpu_env(cpu);
-        if (!env) {
-            error_report("plmt: invalid timecmp hartid: %zu", hartid);
+        if (!cpu) {
+            /* ignore the write to the non-existent mtimecmpX */
         } else if ((addr & 0x7) == 0) {
             uint64_t timecmp_hi = plmt->timecmp[hartid] >> 32;
             andes_plmt_write_timecmp(plmt, RISCV_CPU(cpu),
@@ -241,11 +239,11 @@ andes_plmt_create(hwaddr addr, hwaddr size, uint32_t num_harts,
 
     for (i = 0; i < num_harts; i++) {
         CPUState *cpu = qemu_get_cpu(i);
-        RISCVCPU *rvcpu = RISCV_CPU(cpu);
-        CPURISCVState *env = cpu_env(cpu);
-        if (!env) {
+        if (!cpu) {
             continue;
         }
+        RISCVCPU *rvcpu = RISCV_CPU(cpu);
+        CPURISCVState *env = cpu_env(cpu);
         andes_plmt_callback *cb = g_new0(andes_plmt_callback, 1);
 
         riscv_cpu_set_rdtime_fn(env, andes_cpu_riscv_read_rtc, dev);
@@ -254,7 +252,7 @@ andes_plmt_create(hwaddr addr, hwaddr size, uint32_t num_harts,
         cb->hartid = i;
         plmt->timers[i] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
                                        &andes_plmt_timer_cb, cb);
-        plmt->timecmp[i] = 0;
+        plmt->timecmp[i] = (uint64_t)-1;
 
         qdev_connect_gpio_out(dev, i,
                               qdev_get_gpio_in(DEVICE(rvcpu), IRQ_M_TIMER));

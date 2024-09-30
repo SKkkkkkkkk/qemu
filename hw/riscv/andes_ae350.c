@@ -445,7 +445,7 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
 
     andes_plmt_create(memmap[ANDES_AE350_PLMT].base,
                       memmap[ANDES_AE350_PLMT].size,
-                      machine->smp.cpus,
+                      ANDES_CPUS_MAX,
                       ANDES_PLMT_TIME_BASE,
                       ANDES_PLMT_TIMECMP_BASE,
                       ANDES_PLMT_TIMEBASE_FREQ,
