@@ -90,6 +90,6 @@ typedef struct ATFMAC100State {
 
 void
 atfmac100_create(ATFMAC100State *atfmac, const char *name,
-                 NICInfo *nd, hwaddr addr, qemu_irq irq);
+                 hwaddr addr, qemu_irq irq);
 
 #endif /* HW_ATFMAC100_H */

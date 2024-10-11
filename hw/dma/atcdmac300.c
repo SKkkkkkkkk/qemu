@@ -275,9 +275,9 @@ static void atcdmac300_thread_run_channel(void *opaque, int ch)
                     result = dma_iopmp_read(s, src_addr, &buf[buf_index],
                                             src_width_byte, &src_transaction);
                     while (result == MEMTX_IOPMP_STALL) {
-                        qemu_mutex_unlock_iothread();
+                        bql_unlock();
                         g_usleep(100);
-                        qemu_mutex_lock_iothread();
+                        bql_lock();
                         result = dma_iopmp_read(s, src_addr, &buf[buf_index],
                                                 src_width_byte,
                                                 &src_transaction);
@@ -335,9 +335,9 @@ static void atcdmac300_thread_run_channel(void *opaque, int ch)
                     result = dma_iopmp_write(s, dst_addr, &buf[buf_index],
                                              dst_width_byte, &dst_transaction);
                     while (result == MEMTX_IOPMP_STALL) {
-                        qemu_mutex_unlock_iothread();
+                        bql_unlock();
                         g_usleep(100);
-                        qemu_mutex_lock_iothread();
+                        bql_lock();
                         result = dma_iopmp_write(s, dst_addr, &buf[buf_index],
                                                  dst_width_byte,
                                                  &dst_transaction);
@@ -385,9 +385,9 @@ static void *atcdmac300_thread_run(void *opaque)
 {
     while (1) {
         for (int ch = 0; ch < ATCDMAC300_MAX_CHAN; ch++) {
-            qemu_mutex_lock_iothread();
+            bql_lock();
             atcdmac300_thread_run_channel(opaque, ch);
-            qemu_mutex_unlock_iothread();
+            bql_unlock();
         }
     }
     return NULL;

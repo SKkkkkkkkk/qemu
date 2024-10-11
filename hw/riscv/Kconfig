@@ -10,6 +10,7 @@ config IBEX
 # RISC-V machines in alphabetical order
 config ANDES_AE350
     bool
+    default y
     select ANDES_PLIC
     select ANDES_PLMT
     select ATCDMAC300

@@ -1095,7 +1095,7 @@ static void atfmac100_realize(DeviceState *dev, Error **errp)
     sysbus_init_irq(sbd, &s->irq);
 
     qemu_macaddr_default_if_unset(&s->conf.macaddr);
-    s->conf.peers.ncs[0] = nd_table[0].netdev;
+    //s->conf.peers.ncs[0] = qemu_find_nic_info(TYPE_ATFMAC100, true, NULL)->netdev;
     s->nic = qemu_new_nic(&net_atfmac100_info, &s->conf,
                           object_get_typename(OBJECT(dev)), dev->id,
                           &dev->mem_reentrancy_guard, s);
@@ -1151,18 +1151,16 @@ type_init(atfmac100_register_types)
  */
 void
 atfmac100_create(ATFMAC100State *atfmac, const char *name,
-                 NICInfo *nd, hwaddr addr, qemu_irq irq)
+                 hwaddr addr, qemu_irq irq)
 {
-    /* realize */
-    if (nd->used) {
-        qemu_check_nic_model(nd, TYPE_ATFMAC100);
-        qdev_set_nic_properties(DEVICE(atfmac), nd);
-    }
+    DeviceState *dev = DEVICE(atfmac);
+    SysBusDevice *s = SYS_BUS_DEVICE(atfmac);
+
+    qemu_configure_nic_device(dev, true, NULL);
     object_property_set_int(OBJECT(atfmac), "revision", ATFMAC_REVISION,
                             &error_abort);
-    sysbus_realize(SYS_BUS_DEVICE(atfmac), NULL);
+    sysbus_realize(s, NULL);
     /* TODO: handle Error */
-    sysbus_mmio_map(SYS_BUS_DEVICE(atfmac), 0, addr);
-    sysbus_connect_irq(SYS_BUS_DEVICE(atfmac), 0, irq);
-    return;
+    sysbus_mmio_map(s, 0, addr);
+    sysbus_connect_irq(s, 0, irq);
 }

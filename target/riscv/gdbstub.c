@@ -701,7 +701,7 @@ void riscv_cpu_register_gdb_regs_for_features(CPUState *cs)
                                  0);
     }
     GDBFeature *feature = riscv_gen_dynamic_ace_xml(cs, cs->gdb_num_regs);
-    if (feature->num_regs != 0) {
+    if (feature && feature->num_regs != 0) {
         gdb_register_coprocessor(cs, riscv_gdb_get_ace, riscv_gdb_set_ace,
                                  feature,
                                  0);

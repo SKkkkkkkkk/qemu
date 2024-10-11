@@ -372,7 +372,6 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
     MemoryRegion *system_memory = get_system_memory();
     AndesAe350SocState *s = ANDES_AE350_SOC(dev_soc);
     char *plic_hart_config, *plicsw_hart_config;
-    NICInfo *nd = &nd_table[0];
     Object *obj = OBJECT(dev_soc);
 
     if (s->ilm_size) {
@@ -525,7 +524,7 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
 
     /* NIC */
     atfmac100_create(&s->atfmac100, "atfmac100",
-                 nd, memmap[ANDES_AE350_MAC].base,
+                 memmap[ANDES_AE350_MAC].base,
                  qdev_get_gpio_in(DEVICE(s->plic), ANDES_AE350_MAC_IRQ));
 
     /* PIT */
