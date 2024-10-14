@@ -861,6 +861,10 @@ static void rv64_andes_common_cpu_init(Object *obj,
 
     env->do_interrupt_post = andes_cpu_do_interrupt_post;
 
+    /* Enable CPU features */
+    cfg->mmu = true;
+    cfg->pmp = true;
+
     /* Enable ISA extensions */
     cfg->ext_zifencei = true;
     cfg->ext_zicsr = true;
@@ -1284,6 +1288,10 @@ static void rv32_andes_common_cpu_init(Object *obj,
 #endif
 
     env->do_interrupt_post = andes_cpu_do_interrupt_post;
+
+    /* Enable CPU features */
+    cfg->mmu = true;
+    cfg->pmp = true;
 
     /* Enable ISA extensions */
     cfg->ext_zifencei = true;
