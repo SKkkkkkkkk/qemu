@@ -188,6 +188,12 @@ static void atcdmac300_thread_run_channel(void *opaque, int ch)
     if (((s->chan[ch].ChnCtrl >> CHAN_CTL_ENABLE) & 0x1) != 0x1) {
         return;
     }
+    bql_lock();
+    /* Read again after locked */
+    if (((s->chan[ch].ChnCtrl >> CHAN_CTL_ENABLE) & 0x1) != 0x1) {
+        bql_unlock();
+        return;
+    }
     src_inf = (s->chan[ch].ChnCtrl >> CHAN_CTL_SRC_BUS_IDX) &
                 CHAN_CTL_SRC_BUS_IDX_MASK;
     dst_inf = (s->chan[ch].ChnCtrl >> CHAN_CTL_DST_BUS_IDX) &
@@ -234,6 +240,7 @@ static void atcdmac300_thread_run_channel(void *opaque, int ch)
                 if (!int_abort_mask) {
                     qemu_irq_raise(s->irq);
                 }
+                bql_unlock();
                 return;
             }
             int i;
@@ -291,6 +298,7 @@ static void atcdmac300_thread_run_channel(void *opaque, int ch)
                         if (!int_err_mask) {
                             qemu_irq_raise(s->irq);
                         }
+                        bql_unlock();
                         return;
                     }
                     if (src_addr_ctl == 0) {
@@ -351,6 +359,7 @@ static void atcdmac300_thread_run_channel(void *opaque, int ch)
                         if (!int_err_mask) {
                             qemu_irq_raise(s->irq);
                         }
+                        bql_unlock();
                         return;
                     }
                     if (dst_addr_ctl == 0) {
@@ -370,6 +379,7 @@ static void atcdmac300_thread_run_channel(void *opaque, int ch)
         if (!int_tc_mask) {
             qemu_irq_raise(s->irq);
         }
+        bql_unlock();
         return;
     } else {
         s->ChAbort &= ~(1 << ch);
@@ -378,6 +388,7 @@ static void atcdmac300_thread_run_channel(void *opaque, int ch)
         if (!int_err_mask) {
             qemu_irq_raise(s->irq);
         }
+        bql_unlock();
     }
 }
 
@@ -385,9 +396,7 @@ static void *atcdmac300_thread_run(void *opaque)
 {
     while (1) {
         for (int ch = 0; ch < ATCDMAC300_MAX_CHAN; ch++) {
-            bql_lock();
             atcdmac300_thread_run_channel(opaque, ch);
-            bql_unlock();
         }
     }
     return NULL;
