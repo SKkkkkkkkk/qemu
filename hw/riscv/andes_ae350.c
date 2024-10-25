@@ -319,7 +319,9 @@ create_fdt(AndesAe350BoardState *bs, const struct MemmapEntry *memmap,
         g_free(virtio_name);
     }
 
-    create_fdt_iopmp(bs, memmap, plic_phandle);
+    if (s->secure_platform == ANDES_SECURE_PLATFORM_CPU_45_SERIES) {
+        create_fdt_iopmp(bs, memmap, plic_phandle);
+    }
 }
 
 static char *init_hart_config(const char *hart_config, int num_harts)
@@ -340,7 +342,7 @@ static char *init_hart_config(const char *hart_config, int num_harts)
     return result;
 }
 
-static const struct MemmapEntry iopmp_memmap[] = {
+static const MemMapEntry iopmp_memmap[] = {
     [IOPMP_APB]      = { 0xf0000000, 0x10000000 },
     [IOPMP_RAM]      = { 0x00000000, 0x80000000 },
     [IOPMP_SLP]      = { 0xa0000000,  0x1000000 },
@@ -349,19 +351,13 @@ static const struct MemmapEntry iopmp_memmap[] = {
     [IOPMP_DFS]      = { 0x0,   0x0 },
 };
 
-static void cpu_connect_iopmp(RISCVHartArrayState *cpus, MemoryRegion *iopmp_mr)
+static void iopmp_setup_cpus(RISCVHartArrayState *cpus, uint32_t rrid)
 {
-    CPURISCVState *env;
-    MemoryRegion *iopmp_alias = g_new(MemoryRegion, cpus->num_harts);
+    RISCVCPU *cpu;
     for (int i = 0; i < cpus->num_harts; i++) {
-        env = &cpus->harts[i].env;
-        env->support_iopmp = true;
-        env->iopmp_sid = ANDES_AE350_CPU_IOPMP_SID;
-
-        memory_region_init_alias(&iopmp_alias[i], NULL, "iopmp_alias",
-                                 iopmp_mr, 0, ~0ull);
-        memory_region_add_subregion_overlap(env->cpu_as_iopmp, 0,
-                                            &iopmp_alias[i], 0);
+        cpu = &cpus->harts[i];
+        cpu->cfg.iopmp = true;
+        cpu->cfg.iopmp_rrid = rrid;
     }
 }
 
@@ -372,6 +368,7 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
     MemoryRegion *system_memory = get_system_memory();
     AndesAe350SocState *s = ANDES_AE350_SOC(dev_soc);
     char *plic_hart_config, *plicsw_hart_config;
+    Iopmp_StreamSink *iopmp_sink;
     Object *obj = OBJECT(dev_soc);
 
     if (s->ilm_size) {
@@ -555,33 +552,37 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
         qdev_get_gpio_in(DEVICE(s->plic), ANDES_AE350_UART2_IRQ),
         38400, serial_hd(0), DEVICE_LITTLE_ENDIAN);
 
-    object_initialize_child(obj, "iopmp_dispatcher", &(s->iopmp_dispatcher),
-                            TYPE_IOPMP_DISPATCHER);
-    qdev_prop_set_uint32(DEVICE(&s->iopmp_dispatcher), "target-num",
-                         AE350_IOPMP_TARGET_NUM);
-    sysbus_realize(SYS_BUS_DEVICE(&s->iopmp_dispatcher), NULL);
+   /* Secure platform */
+    if (s->secure_platform == ANDES_SECURE_PLATFORM_CPU_45_SERIES) {
+        object_initialize_child(obj, "iopmp_dispatcher",
+                                &(s->iopmp_dispatcher),
+                                TYPE_IOPMP_DISPATCHER);
+        qdev_prop_set_uint32(DEVICE(&s->iopmp_dispatcher), "target-num",
+                                AE350_IOPMP_TARGET_NUM);
+        sysbus_realize(SYS_BUS_DEVICE(&s->iopmp_dispatcher), NULL);
 
-    /* IOPMP */
-    for (int i = 0; i < AE350_IOPMP_TARGET_NUM; i++) {
-        s->iopmp_dev[i] =
-            atciopmp300_create(memmap[ANDES_AE350_IOPMP_APB + i].base,
-                qdev_get_gpio_in(DEVICE(s->plic), ANDES_AE350_IOPMP_IRQ));
+        for (int i = 0; i < AE350_IOPMP_TARGET_NUM; i++) {
+            s->iopmp_dev[i] =
+                atciopmp300_create(memmap[ANDES_AE350_IOPMP_APB + i].base,
+                                   qdev_get_gpio_in(DEVICE(s->plic),
+                                                    ANDES_AE350_IOPMP_IRQ));
+            iopmp_sink = &(ATCIOPMP300(s->iopmp_dev[i])->transaction_info_sink);
+            iopmp_dispatcher_add_target(DEVICE(&s->iopmp_dispatcher),
+                                        (StreamSink *)iopmp_sink,
+                                        iopmp_memmap[i].base,
+                                        iopmp_memmap[i].size, i);
+        }
 
-        iopmp_dispatcher_add_target(DEVICE(&s->iopmp_dispatcher),
-            &(ATCIOPMP300(s->iopmp_dev[i])->iopmp_sysbus_as),
-            (StreamSink *)&(ATCIOPMP300(s->iopmp_dev[i])->transaction_info_sink),
-            iopmp_memmap[i].base, iopmp_memmap[i].size,
-            i);
+        iopmp_setup_cpus(&s->cpus, 0);
+        /* DMA connect to iopmp */
+        atcdmac300_connect_iopmp(DEVICE(&s->dma), &address_space_memory,
+            (StreamSink *)&(s->iopmp_dispatcher.transaction_info_sink),
+            ANDES_AE350_DMAC_INF0_IOPMP_SID, ANDES_AE350_DMAC_INF1_IOPMP_SID);
+    } else if (s->secure_platform != ANDES_SECURE_PLATFORM_DISABLE) {
+        error_report("%d secure platform is not supported.",
+                     s->secure_platform);
+        exit(1);
     }
-
-    /* CPU connect to iopmp */
-    cpu_connect_iopmp(&s->cpus, MEMORY_REGION(&s->iopmp_dispatcher.iommu));
-
-    /* DMA connect to iopmp */
-    atcdmac300_connect_iopmp(DEVICE(&s->dma),
-        &s->iopmp_dispatcher.dispatcher_as,
-        (StreamSink *)&(s->iopmp_dispatcher.transaction_info_sink),
-        ANDES_AE350_DMAC_INF0_IOPMP_SID, ANDES_AE350_DMAC_INF1_IOPMP_SID);
 }
 
 static void andes_ae350_soc_instance_init(Object *obj)
@@ -831,6 +832,13 @@ static void andes_ae350_machine_init(MachineState *machine)
                 andes_ae350_memmap[ANDES_AE350_MROM].base,
                 andes_ae350_memmap[ANDES_AE350_MROM].size,
                 kernel_entry, fdt_load_addr);
+    if (bs->soc.secure_platform == ANDES_SECURE_PLATFORM_CPU_45_SERIES) {
+        /* After all protected devices are realized, setup iopmp downstream */
+        for (int i = 0; i < AE350_IOPMP_TARGET_NUM; i++) {
+            iopmp300_setup_system_memory(bs->soc.iopmp_dev[i],
+                                         &iopmp_memmap[i], 1);
+        }
+    }
 }
 
 static void ae350_do_nmi_on_cpu(CPUState *cs, run_on_cpu_data arg)
@@ -900,6 +908,8 @@ static Property andes_ae350_soc_property[] = {
                        ANDES_HVM_BASE_DEFAULT),
     DEFINE_PROP_UINT64("hvm_size_pow_2", AndesAe350SocState, hvm_size_pow_2,
                        ANDES_HVM_SIZE_POW_2_DEFAULT),
+    DEFINE_PROP_UINT32("secure_platform", AndesAe350SocState, secure_platform,
+                       ANDES_SECURE_PLATFORM_DISABLE),
     DEFINE_PROP_END_OF_LIST(),
 };
 

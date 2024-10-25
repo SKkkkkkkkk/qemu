@@ -515,14 +515,9 @@ struct CPUArchState {
     AceAgentReg ace_agent_register;
     AceAgentRunInsn ace_agent_run_insn;
 
-    /* Support for IOPMP */
-    bool support_iopmp;
-    uint32_t iopmp_sid;
-
 #ifndef CONFIG_USER_ONLY
     MemoryRegion *cpu_as_root;
     MemoryRegion *cpu_as_mem;
-    MemoryRegion *cpu_as_iopmp;
     MemoryRegion *mask_ilm;
     MemoryRegion *mask_dlm;
     MemoryRegion *mask_ilm_alias;

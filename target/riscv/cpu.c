@@ -618,13 +618,10 @@ static void andes_cpu_lm_init(Object *obj)
 
     env->cpu_as_root = g_new(MemoryRegion, 1);
     env->cpu_as_mem = g_new(MemoryRegion, 1);
-    env->cpu_as_iopmp = g_new(MemoryRegion, 1);
+
     /* Outer container... */
     memory_region_init(env->cpu_as_root, OBJECT(obj), "cpu-as-root", ~0ull);
     memory_region_set_enabled(env->cpu_as_root, true);
-
-    memory_region_init(env->cpu_as_iopmp, OBJECT(obj), "cpu-as-secure", ~0ull);
-    memory_region_set_enabled(env->cpu_as_iopmp, true);
 
     memory_region_init_alias(env->cpu_as_mem, OBJECT(obj), "cpu-as-mem",
                              get_system_memory(), 0, ~0ull);
@@ -632,9 +629,8 @@ static void andes_cpu_lm_init(Object *obj)
                                         env->cpu_as_mem, 0);
     memory_region_set_enabled(env->cpu_as_mem, true);
 
-    cs->num_ases = 2;
+    cs->num_ases = 1;
     cpu_address_space_init(cs, 0, "cpu-memory", env->cpu_as_root);
-    cpu_address_space_init(cs, 1, "cpu-secure-memory", env->cpu_as_iopmp);
     env->mask_ilm = g_new(MemoryRegion, 1);
     env->mask_dlm = g_new(MemoryRegion, 1);
     env->mask_ilm_alias = g_new(MemoryRegion, 1);
@@ -660,8 +656,6 @@ static void andes_cpu_lm_realize(DeviceState *dev)
         if (env->ilm_default_enable) {
             memory_region_add_subregion_overlap(env->cpu_as_root, env->ilm_base,
                                         env->mask_ilm, 1);
-            memory_region_add_subregion_overlap(env->cpu_as_iopmp,
-                env->ilm_base, env->mask_ilm_alias, 1);
         }
     }
     if (env->dlm_size) {
@@ -678,8 +672,6 @@ static void andes_cpu_lm_realize(DeviceState *dev)
         if (env->dlm_default_enable) {
             memory_region_add_subregion_overlap(env->cpu_as_root, env->dlm_base,
                                         env->mask_dlm, 1);
-            memory_region_add_subregion_overlap(env->cpu_as_iopmp,
-                env->dlm_base, env->mask_dlm_alias, 1);
         }
     }
 }
@@ -2140,23 +2132,17 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
         if (!memory_region_is_mapped(env->mask_ilm)) {
             memory_region_add_subregion_overlap(env->cpu_as_root,
                                 env->ilm_base, env->mask_ilm, 1);
-            memory_region_add_subregion_overlap(env->cpu_as_iopmp,
-                env->ilm_base, env->mask_ilm_alias, 1);
         }
     } else if (env->mask_ilm && memory_region_is_mapped(env->mask_ilm)) {
         memory_region_del_subregion(env->cpu_as_root, env->mask_ilm);
-        memory_region_del_subregion(env->cpu_as_iopmp, env->mask_ilm_alias);
     }
     if (env->dlm_default_enable) {
         if (!memory_region_is_mapped(env->mask_dlm)) {
             memory_region_add_subregion_overlap(env->cpu_as_root,
                                 env->dlm_base, env->mask_dlm, 1);
-            memory_region_add_subregion_overlap(env->cpu_as_iopmp,
-                env->dlm_base, env->mask_dlm_alias, 1);
         }
     } else if (env->mask_dlm && memory_region_is_mapped(env->mask_dlm)) {
         memory_region_del_subregion(env->cpu_as_root, env->mask_dlm);
-        memory_region_del_subregion(env->cpu_as_iopmp, env->mask_dlm_alias);
     }
     tlb_flush(env_cpu(env));
     if (locked) {
@@ -3938,9 +3924,9 @@ static Property riscv_cpu_properties[] = {
     {.name = "cbop_blocksize", .info = &prop_cbop_blksize},
     {.name = "cboz_blocksize", .info = &prop_cboz_blksize},
 
-     {.name = "mvendorid", .info = &prop_mvendorid},
-     {.name = "mimpid", .info = &prop_mimpid},
-     {.name = "marchid", .info = &prop_marchid},
+    {.name = "mvendorid", .info = &prop_mvendorid},
+    {.name = "mimpid", .info = &prop_mimpid},
+    {.name = "marchid", .info = &prop_marchid},
 
 #ifndef CONFIG_USER_ONLY
     DEFINE_PROP_UINT64("resetvec", RISCVCPU, env.resetvec, DEFAULT_RSTVEC),
@@ -3957,6 +3943,10 @@ static Property riscv_cpu_properties[] = {
      * it with -x and default to 'false'.
      */
     DEFINE_PROP_BOOL("x-misa-w", RISCVCPU, cfg.misa_w, false),
+
+    DEFINE_PROP_BOOL("iopmp", RISCVCPU, cfg.iopmp, false),
+    DEFINE_PROP_UINT32("iopmp_rrid", RISCVCPU, cfg.iopmp_rrid, 0),
+
     DEFINE_PROP_END_OF_LIST(),
 };
 

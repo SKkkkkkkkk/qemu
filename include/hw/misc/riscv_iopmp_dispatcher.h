@@ -42,13 +42,11 @@ typedef struct Iopmp_Dispatcher_State {
     Iopmp_Dispatcher_StreamSink transaction_info_sink;
 
     AddressSpace dispatcher_as;
-    AddressSpace **target_as;
     StreamSink **target_sink;
     MemMapEntry *target_map;
     uint32_t target_num;
 } Iopmp_Dispatcher_State;
 
-void iopmp_dispatcher_add_target(DeviceState *dev, AddressSpace *as,
-    StreamSink *sink, uint64_t base, uint64_t size, int id);
-
+void iopmp_dispatcher_add_target(DeviceState *dev, StreamSink *sink,
+    uint64_t base, uint64_t size, int id);
 #endif

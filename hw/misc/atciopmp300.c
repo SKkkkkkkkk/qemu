@@ -155,11 +155,12 @@ static void iopmp_iommu_notify(Atciopmp300state *s)
     }
 }
 
-static inline int get_transaction_type(IOMMUAccessFlags flags) {
-    if(flags == IOMMU_RO) {
+static inline int get_transaction_type(IOMMUAccessFlags flags)
+{
+    if (flags == IOMMU_RO) {
         return ERR_REQINFO_TYPE_READ;
     }
-    if(flags == IOMMU_WO) {
+    if (flags == IOMMU_WO) {
         return ERR_REQINFO_TYPE_WRITE;
     }
     qemu_log_mask(LOG_GUEST_ERROR, "%s: Unsupported IOMMUAccessFlags %d\n",
@@ -727,7 +728,8 @@ static int match_entry_md(Atciopmp300state *s, int md_idx, hwaddr start_addr,
             IOPMP_AMATCH_OFF) {
             continue;
         }
-        if (start_addr >= s->entry_addr[i].sa && start_addr <= s->entry_addr[i].ea) {
+        if (start_addr >= s->entry_addr[i].sa &&
+            start_addr <= s->entry_addr[i].ea) {
             /* Check end address */
             if (end_addr >= s->entry_addr[i].sa &&
                 end_addr <= s->entry_addr[i].ea) {
@@ -880,7 +882,11 @@ static IOMMUTLBEntry iopmp_translate(IOMMUMemoryRegion *iommu, hwaddr addr,
 
     if (!s->enable) {
         /* Bypass IOPMP */
-        entry.addr_mask = -1ULL,
+        /*
+         * prevnet plen_out = 0;
+         * plen_out = MIN(*plen_out, (addr | iotlb.addr_mask) - addr + 1);
+         */
+        entry.addr_mask = TARGET_PAGE_SIZE - 1,
         entry.perm = IOMMU_RW;
         return entry;
     }
@@ -1374,10 +1380,12 @@ static Property iopmp_property[] = {
     DEFINE_PROP_STRING("model", Atciopmp300state, model_str),
     DEFINE_PROP_BOOL("sps_en", Atciopmp300state, sps_en, false),
     DEFINE_PROP_UINT32("k", Atciopmp300state, k, CFG_IOPMP_MODEL_K),
-    DEFINE_PROP_UINT32("prio_entry", Atciopmp300state, prio_entry, CFG_PRIO_ENTRY),
+    DEFINE_PROP_UINT32("prio_entry", Atciopmp300state, prio_entry,
+                       CFG_PRIO_ENTRY),
     DEFINE_PROP_UINT32("sid_num", Atciopmp300state, sid_num, IOPMP_SID_NUM),
     DEFINE_PROP_UINT32("md_num", Atciopmp300state, md_num, IOPMP_MD_NUM),
-    DEFINE_PROP_UINT32("entry_num", Atciopmp300state, entry_num, IOPMP_ENTRY_NUM),
+    DEFINE_PROP_UINT32("entry_num", Atciopmp300state, entry_num,
+                       IOPMP_ENTRY_NUM),
     DEFINE_PROP_END_OF_LIST(),
 };
 
@@ -1442,6 +1450,68 @@ void iopmp_setup_pci(DeviceState *iopmp_dev, PCIBus *bus)
 {
     Atciopmp300state *s = ATCIOPMP300(iopmp_dev);
     pci_setup_iommu(bus, &iopmp_iommu_ops, s);
+}
+
+
+/*
+ * Alias subregions from the source memory region to the destination memory
+ * region
+ */
+static void alias_memory_subregions(MemoryRegion *src_mr, MemoryRegion *dst_mr,
+                                    const MemMapEntry *memmap,
+                                    uint32_t map_entry_num)
+{
+    int32_t priority;
+    hwaddr addr;
+    MemoryRegion *alias, *subregion;
+    QTAILQ_FOREACH(subregion, &src_mr->subregions, subregions_link) {
+        addr = subregion->addr;
+        for (int i = 0; i < map_entry_num; i++) {
+            if (addr >= memmap[i].base &&
+                addr < memmap[i].base + memmap[i].size) {
+                priority = subregion->priority;
+                alias = g_malloc0(sizeof(MemoryRegion));
+                memory_region_init_alias(alias, NULL, subregion->name,
+                                         subregion, 0,
+                                         memory_region_size(subregion));
+                memory_region_add_subregion_overlap(dst_mr, addr, alias,
+                                                    priority);
+                break;
+            }
+        }
+    }
+}
+
+/*
+ * Create downstream of system memory for IOPMP, and overlap memory region
+ * specified in memmap with IOPMP translator. Make sure subregions are added to
+ * system memory before call this function.
+ */
+void iopmp300_setup_system_memory(DeviceState *dev, const MemMapEntry *memmap,
+                                  uint32_t map_entry_num)
+{
+    Atciopmp300state *s = ATCIOPMP300(dev);
+    uint32_t i;
+    MemoryRegion *iommu_alias;
+    MemoryRegion *target_mr = get_system_memory();
+    MemoryRegion *downstream = g_malloc0(sizeof(MemoryRegion));
+    memory_region_init(downstream, NULL, "iopmp_downstream",
+                       memory_region_size(target_mr));
+    /* Create a downstream which does not have iommu of iopmp */
+    alias_memory_subregions(target_mr, downstream, memmap, map_entry_num);
+
+    for (i = 0; i < map_entry_num; i++) {
+        /* Memory access to protected regions of target are through IOPMP */
+        iommu_alias = g_new(MemoryRegion, 1);
+        memory_region_init_alias(iommu_alias, NULL, "iommu_alias",
+                                 MEMORY_REGION(&s->iommu), memmap[i].base,
+                                 memmap[i].size);
+        memory_region_add_subregion_overlap(target_mr, memmap[i].base,
+                                            iommu_alias, 1);
+    }
+    s->downstream = downstream;
+    address_space_init(&s->downstream_as, s->downstream,
+                       "iopmp-downstream-as");
 }
 
 static size_t

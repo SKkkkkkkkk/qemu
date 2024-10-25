@@ -201,4 +201,7 @@ typedef struct Atciopmp300state {
 
 void iopmp_setup_pci(DeviceState *iopmp_dev, PCIBus *bus);
 DeviceState *atciopmp300_create(hwaddr addr, qemu_irq irq);
+
+void iopmp300_setup_system_memory(DeviceState *dev, const MemMapEntry *memmap,
+                                  uint32_t mapentry_num);
 #endif

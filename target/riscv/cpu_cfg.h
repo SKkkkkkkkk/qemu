@@ -191,6 +191,9 @@ struct RISCVCPUConfig {
 
     bool short_isa_string;
 
+    bool iopmp;
+    uint32_t iopmp_rrid;
+
 #ifndef CONFIG_USER_ONLY
     RISCVSATPMap satp_mode;
 #endif

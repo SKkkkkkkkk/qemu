@@ -1655,16 +1655,15 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
     }
 
     if (ret == TRANSLATE_SUCCESS) {
-        if (env->support_iopmp) {
+        if (cpu->cfg.iopmp) {
             /*
-             * Do not align address on early stage, IOPMP need origin address
-             * for permission check
+             * Do not align address on early stage because IOPMP needs origin
+             * address for permission check.
              */
-            tlb_set_page_with_attrs(cs, address,
-                                    pa,
+            tlb_set_page_with_attrs(cs, address, pa,
                                     (MemTxAttrs)
-                                        { .secure = 1,
-                                          .requester_id = env->iopmp_sid,
+                                        {
+                                            .requester_id = cpu->cfg.iopmp_rrid,
                                         },
                                     prot, mmu_idx, tlb_size);
         } else {

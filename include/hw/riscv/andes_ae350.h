@@ -64,6 +64,7 @@ typedef struct AndesAe350SocState {
 
     DeviceState *iopmp_dev[AE350_IOPMP_TARGET_NUM];
     Iopmp_Dispatcher_State iopmp_dispatcher;
+    uint32_t secure_platform;
 } AndesAe350SocState;
 
 #define TYPE_ANDES_AE350_MACHINE MACHINE_TYPE_NAME("andes_ae350")
@@ -129,6 +130,11 @@ enum {
     IOPMP_ROM,
     IOPMP_IOCP, /* not impl */
     IOPMP_DFS /* not impl */
+};
+
+enum {
+    ANDES_SECURE_PLATFORM_DISABLE = 0,
+    ANDES_SECURE_PLATFORM_CPU_45_SERIES = 45,
 };
 
 enum {
