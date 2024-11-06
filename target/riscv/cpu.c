@@ -1488,6 +1488,11 @@ static void rv32_andes_n25f_cpu_init(Object *obj)
     rv32_andes_n25_cpu_init(obj);
 }
 
+static void rv32_andes_n25f_se_cpu_init(Object *obj)
+{
+    rv32_andes_n25f_cpu_init(obj);
+}
+
 static void rv32_andes_n225_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
@@ -4242,6 +4247,7 @@ static const TypeInfo riscv_cpu_type_infos[] = {
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D45,      MXL_RV32,  rv32_andes_d45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N25,      MXL_RV32,  rv32_andes_n25_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N25F,     MXL_RV32,  rv32_andes_n25f_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N25F_SE,  MXL_RV32,  rv32_andes_n25f_se_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N225,     MXL_RV32,  rv32_andes_n225_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_N45,      MXL_RV32,  rv32_andes_n45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_IBEX,           MXL_RV32,  rv32_ibex_cpu_init),

@@ -461,10 +461,10 @@ atfsdc010_class_init(ObjectClass *klass, void *data)
     DeviceClass *k = DEVICE_CLASS(klass);
 
     k->vmsd = &vmstate_atfsdc010;
-    k->reset = atfsdc010_reset;
     /* Reason: init() method uses drive_get_next() */
     k->user_creatable = false;
     k->realize = atfsdc010_realize;
+    device_class_set_legacy_reset(k, atfsdc010_reset);
 }
 
 static const MemoryRegionOps atfsdc010_ops = {

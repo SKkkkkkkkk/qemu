@@ -415,8 +415,7 @@ static void andes_plic_class_init(ObjectClass *klass, void *data)
     device_class_set_props(dc, andes_plic_properties);
     device_class_set_parent_realize(dc, andes_plic_realize,
                                     &apc->parent_realize);
-    device_class_set_parent_reset(dc, andes_plic_reset,
-                                    &apc->parent_reset);
+    device_class_set_legacy_reset(dc, andes_plic_reset);
 }
 
 static const TypeInfo andes_plic_info = {

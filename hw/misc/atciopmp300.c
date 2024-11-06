@@ -1394,7 +1394,7 @@ static void atciopmp300_class_init(ObjectClass *klass, void *data)
     DeviceClass *dc = DEVICE_CLASS(klass);
     device_class_set_props(dc, iopmp_property);
     dc->realize = iopmp_realize;
-    dc->reset = iopmp_reset;
+    device_class_set_legacy_reset(dc, iopmp_reset);
 }
 
 static void atciopmp300_init(Object *obj)

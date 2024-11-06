@@ -30,7 +30,7 @@
 #include "hw/nmi.h"
 #include "hw/sysbus.h"
 #include "hw/qdev-properties.h"
-#include "hw/char/serial.h"
+#include "hw/char/serial-mm.h"
 #include "hw/misc/unimp.h"
 #include "target/riscv/cpu.h"
 #include "hw/riscv/riscv_hart.h"
@@ -805,7 +805,7 @@ static void andes_ae350_machine_init(MachineState *machine)
 
     start_addr = andes_load_elf(machine, BIOS_FILENAME);
     firmware_end_addr = riscv_find_and_load_firmware(machine, BIOS_FILENAME,
-                                                     start_addr, NULL);
+                                                     (hwaddr*)&start_addr, NULL);
     if (machine->kernel_filename) {
         kernel_start_addr = riscv_calc_kernel_start_addr(&bs->soc.cpus,
                                                          firmware_end_addr);

@@ -1125,9 +1125,9 @@ static void atfmac100_class_init(ObjectClass *klass, void *data)
     DeviceClass *dc = DEVICE_CLASS(klass);
 
     dc->vmsd = &vmstate_atfmac100;
-    dc->reset = atfmac100_reset;
     dc->realize = atfmac100_realize;
     dc->desc = "Andes ATFMAC100 Ethernet emulation";
+    device_class_set_legacy_reset(dc, atfmac100_reset);
     set_bit(DEVICE_CATEGORY_NETWORK, dc->categories);
     device_class_set_props(dc, atfmac100_properties);
 }

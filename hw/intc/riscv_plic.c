@@ -650,7 +650,7 @@ static void riscv_plic_class_init(ObjectClass *klass, void *data)
     device_class_set_props(dc, riscv_plic_properties);
     dc->realize = riscv_plic_realize;
     dc->vmsd = &vmstate_riscv_plic;
-    dc->reset = riscv_plic_reset;
+    device_class_set_legacy_reset(dc, riscv_plic_reset);
 }
 
 static const TypeInfo riscv_plic_info = {

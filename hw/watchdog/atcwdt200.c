@@ -305,7 +305,7 @@ atcwdt200_class_init(ObjectClass *klass, void *data)
 
     set_bit(DEVICE_CATEGORY_WATCHDOG, k->categories);
     k->realize = atcwdt200_realize;
-    k->reset = atcwdt200_reset;
+    device_class_set_legacy_reset(k, atcwdt200_reset);
 
     device_class_set_props(k, atcwdt200_properties);
 }

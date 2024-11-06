@@ -381,7 +381,7 @@ atcrtc100_class_init(ObjectClass *klass, void *data)
     LOG("%s:\n", __func__);
     DeviceClass *k = DEVICE_CLASS(klass);
     k->realize = atcrtc100_realize;
-    k->reset = atcrtc100_reset;
+    device_class_set_legacy_reset(k, atcrtc100_reset);
 }
 
 static void

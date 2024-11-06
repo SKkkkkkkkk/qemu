@@ -550,7 +550,7 @@ atcpit100_class_init(ObjectClass *klass, void *data)
 #ifdef MORE_HOOK
     k->realize = atcpit100_realize;
 #endif
-    k->reset = atcpit100_reset;
+    device_class_set_legacy_reset(k, atcpit100_reset);
     device_class_set_props(k, atcpit100_properties);
 }
 
