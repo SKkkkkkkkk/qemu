@@ -4906,6 +4906,15 @@ static inline RISCVException riscv_csrrw_check(CPURISCVState *env,
     }
 
     csr_priv = get_field(csrno, 0x300);
+    /*
+     * The encoding of mscontext does not conform to the Privileged Spec
+     * and it should be accessible in S/HS, M, Debug mode, so make this
+     * CSR privilege PRV_S.
+     */
+    if (csrno == CSR_MSCONTEXT) {
+        csr_priv = PRV_S;
+    }
+
     if (!env->debugger && (effective_priv < csr_priv)) {
         if (csr_priv == (PRV_S + 1) && env->virt_enabled) {
             return RISCV_EXCP_VIRT_INSTRUCTION_FAULT;
@@ -5466,9 +5475,10 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
     [CSR_TINFO]     =  { "tinfo",    debug, read_tinfo,    write_ignore  },
     [CSR_TCONTROL]  =  { "tcontrol", sdtrig_tcontrol,      read_tcontrol,
                          write_tcontrol                                  },
-    [CSR_SCONTEXT]  =  { "scontext", debug, read_scontext, write_scontext },
-    [CSR_HCONTEXT]  =  { "hcontext", debug, read_hcontext, write_hcontext },
-    [CSR_MCONTEXT]  =  { "mcontext", debug, read_mcontext, write_mcontext },
+    [CSR_SCONTEXT]  =  { "scontext",  debug, read_scontext, write_scontext },
+    [CSR_HCONTEXT]  =  { "hcontext",  debug, read_hcontext, write_hcontext },
+    [CSR_MCONTEXT]  =  { "mcontext",  debug, read_mcontext, write_mcontext },
+    [CSR_MSCONTEXT] =  { "mscontext", debug, read_scontext, write_scontext },
 
     /* User Pointer Masking */
     [CSR_UMTE]    =    { "umte",    pointer_masking, read_umte,  write_umte },

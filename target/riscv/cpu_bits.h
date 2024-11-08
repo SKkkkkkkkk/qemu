@@ -363,6 +363,7 @@
 #define CSR_SCONTEXT        0x5a8
 #define CSR_HCONTEXT        0x6a8
 #define CSR_MCONTEXT        0x7a8
+#define CSR_MSCONTEXT       0x7aa
 
 /* Debug Mode Registers */
 #define CSR_DCSR            0x7b0
