@@ -24,7 +24,7 @@
 
 #include "exec/breakpoint.h"
 
-#define RV_MAX_TRIGGERS         2
+#define RV_MAX_TRIGGERS         8
 #define RV_SDTRIG_VERSION       1
 
 /* register index of tdata CSRs */
