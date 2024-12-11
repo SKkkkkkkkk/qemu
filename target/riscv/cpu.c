@@ -4263,7 +4263,6 @@ static const TypeInfo riscv_cpu_type_infos[] = {
 #endif
 
 #if defined(TARGET_RISCV64)
-    DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_MAX,           MXL_RV64,  riscv_max_cpu_init),
     DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_BASE64,        MXL_RV64,  rv64_base_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX25,     MXL_RV64,  rv64_andes_ax25_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX27,     MXL_RV64,  rv64_andes_ax27_cpu_init),
