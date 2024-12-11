@@ -13,6 +13,9 @@ config ANDES_AE350
     default y
     select ANDES_PLIC
     select ANDES_PLMT
+    select RISCV_APLIC
+    select RISCV_IMSIC
+    select RISCV_NUMA
     select ATCDMAC300
     select ATCPIT100
     select ATCRTC100
