@@ -627,10 +627,8 @@ static const VMStateDescription vmstate_riscv_plic = {
         }
 };
 
-static void riscv_plic_reset(DeviceState *dev)
+static void riscv_plic_reset(RISCVPLICState *plic)
 {
-    RISCVPLICState *plic = RISCV_PLIC(dev);
-
     memset(plic->source_priority, 0, sizeof(uint32_t) * plic->num_sources);
     memset(plic->target_priority, 0, sizeof(uint32_t) * plic->num_addrs);
     memset(plic->pending, 0, sizeof(uint32_t) * plic->bitfield_words);
@@ -643,14 +641,21 @@ static void riscv_plic_reset(DeviceState *dev)
     }
 }
 
+static void riscv_plic_reset_hold(Object *obj, ResetType type)
+{
+    RISCVPLICState *plic = RISCV_PLIC(obj);
+    riscv_plic_reset(plic);
+}
+
 static void riscv_plic_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
+    ResettableClass *rc = RESETTABLE_CLASS(klass);
 
     device_class_set_props(dc, riscv_plic_properties);
     dc->realize = riscv_plic_realize;
     dc->vmsd = &vmstate_riscv_plic;
-    device_class_set_legacy_reset(dc, riscv_plic_reset);
+    rc->phases.hold = riscv_plic_reset_hold;
 }
 
 static const TypeInfo riscv_plic_info = {

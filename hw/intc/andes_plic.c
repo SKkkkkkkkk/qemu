@@ -358,8 +358,9 @@ andes_plic_realize(DeviceState *dev, Error **errp)
     }
     /* Use uint32 to record level for each source irq */
     andes_plic->level = g_new0(uint32_t, riscv_plic->num_sources);
-    /* Use uint32 to record gw_state for each source irq */
-    andes_plic->gw_state = g_new0(uint32_t, riscv_plic->num_sources);
+
+    /* Allocate gateway state register space */
+    andes_plic->gw_state = g_new0(uint32_t, riscv_plic->bitfield_words);
 
     /* Allocate trigger type register space */
     andes_plic->trigger_type = g_new0(uint32_t, riscv_plic->bitfield_words);
@@ -393,13 +394,10 @@ static Property andes_plic_properties[] = {
     DEFINE_PROP_END_OF_LIST(),
 };
 
-static void andes_plic_reset(DeviceState *dev)
+static void andes_plic_reset(AndesPLICState *andes_plic)
 {
-    AndesPLICState *andes_plic = ANDES_PLIC(dev);
     RISCVPLICState *riscv_plic = RISCV_PLIC(andes_plic);
-    AndesPLICClass *andes_plic_class = ANDES_PLIC_GET_CLASS(andes_plic);
 
-    andes_plic_class->parent_reset(dev);
     memset(andes_plic->level, 0, sizeof(uint32_t) *
            riscv_plic->bitfield_words);
     memset(andes_plic->gw_state, 0, sizeof(uint32_t) *
@@ -407,15 +405,28 @@ static void andes_plic_reset(DeviceState *dev)
     /* No reset trigger type */
 }
 
+static void andes_plic_reset_hold(Object *obj, ResetType type)
+{
+    AndesPLICState *andes_plic = ANDES_PLIC(obj);
+    AndesPLICClass *apc = ANDES_PLIC_GET_CLASS(obj);
+    andes_plic_reset(andes_plic);
+    if (apc->parent_phases.hold) {
+        apc->parent_phases.hold(obj, type);
+    }
+}
+
 static void andes_plic_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     AndesPLICClass *apc = ANDES_PLIC_CLASS(klass);
+    ResettableClass *rc = RESETTABLE_CLASS(klass);
 
     device_class_set_props(dc, andes_plic_properties);
     device_class_set_parent_realize(dc, andes_plic_realize,
                                     &apc->parent_realize);
-    device_class_set_legacy_reset(dc, andes_plic_reset);
+    resettable_class_set_parent_phases(rc, NULL, andes_plic_reset_hold, NULL,
+                                       &apc->parent_phases);
+
 }
 
 static const TypeInfo andes_plic_info = {

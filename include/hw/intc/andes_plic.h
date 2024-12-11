@@ -60,9 +60,8 @@ typedef struct AndesPLICClass AndesPLICClass;
 
 typedef struct AndesPLICClass {
     RISCVPLICClass parent_class;
-
     DeviceRealize parent_realize;
-    DeviceReset parent_reset;
+    ResettablePhases parent_phases;
 } AndesPLICClass;
 
 typedef struct AndesPLICState AndesPLICState;
