@@ -1081,6 +1081,112 @@ static void rv64_andes_ax65_cpu_init(Object *obj)
                                          BIT_ULL(V5_MMSC_CFG_HSPO);
 }
 
+static void rv64_andes_ax66_cpu_init(Object *obj)
+{
+    RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
+    CPURISCVState *env = &RISCV_CPU(obj)->env;
+
+    riscv_cpu_set_misa_ext(
+            env, RVI | RVM | RVA | RVF | RVD | RVC | RVB | RVS | RVU | RVH | RVV | RVX);
+    rv64_andes_common_cpu_init(obj, VM_1_10_SV48, andes_set_mmsc_cfg_l2c);
+    env->priv_ver = PRIV_VERSION_1_13_0;
+
+    /* Set CPU ID */
+    cfg->marchid = ANDES_CPUID_AX66;
+
+    cfg->ext_zama16b = true;
+    cfg->ext_zawrs = true;
+    cfg->ext_zihintntl = true;
+    cfg->ext_zihintpause = true;
+    cfg->ext_zic64b = true;
+    cfg->ext_zicfilp = true;
+    cfg->ext_zicfiss = true;
+    cfg->ext_zicond = true;
+    cfg->ext_zimop = true;
+    cfg->ext_sstc = true;
+
+    /* Bitmanip */
+    cfg->ext_zba = true;
+    cfg->ext_zbb = true;
+    cfg->ext_zbc = true;
+    cfg->ext_zbs = true;
+    cfg->ext_zvbb = true;
+
+    /* Compressed */
+    cfg->ext_zcb = true;
+    cfg->ext_zcmop = true;
+
+    /* Crypto */
+    cfg->ext_zk  = true;
+    cfg->ext_zks = true;
+    cfg->ext_zvbc = true;
+    cfg->ext_zvkng = true;
+    cfg->ext_zvksg = true;
+    cfg->ext_zvkt = true;
+
+    /* Floating */
+    cfg->ext_zfa = true;
+    cfg->ext_zfbfmin = true;
+    cfg->ext_zfh = true;
+    cfg->ext_zfhmin = true;
+    cfg->ext_zvfbfmin = true;
+    cfg->ext_zvfbfwma = true;
+    cfg->ext_zvfh = true;
+    cfg->ext_zvfhmin = true;
+
+    /* Base Cache Management Operation */
+    cfg->ext_zicbom = true;
+    cfg->ext_zicbop = true;
+    cfg->ext_zicboz = true;
+    cfg->cbom_blocksize = 64;
+    cfg->cbop_blocksize = 64;
+    cfg->cboz_blocksize = 64;
+
+    /* Pointer Masking */
+    cfg->ext_smmpm = true;
+    cfg->ext_smnpm = true;
+    cfg->ext_ssnpm = true;
+
+    /* Hypervisor */
+    cfg->ext_sha = true;
+    cfg->ext_ssstateen = true;
+
+    /*
+     * Count Overflow and Mode-Based Filtering
+     * (only 4 HPM counter available)
+     */
+    cfg->ext_sscofpmf = true;
+    cfg->pmu_mask = MAKE_64BIT_MASK(3, 4);
+
+    /* MMU */
+    cfg->ext_svade = true;
+    cfg->ext_svnapot = true;
+    cfg->ext_svpbmt = true;
+    cfg->ext_svinval = true;
+    cfg->ext_svvptc = true;
+
+    /* ePMP 0.9.3 (experimental) */
+    cfg->ext_smepmp = true;
+
+    /* CSR_MMSC_CFG = 0xf0e00340092015 */
+    env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
+                                         BIT(V5_MMSC_CFG_TLB_ECC2) |
+                                         BIT(V5_MMSC_CFG_PFT) |
+                                         BIT(V5_MMSC_CFG_EV5PE) |
+                                         BIT(V5_MMSC_CFG_CCTLCSR) |
+                                         BIT(V5_MMSC_CFG_VCCTL2) |
+                                         BIT(V5_MMSC_CFG_PPMA) |
+                                         BIT_ULL(V5_MMSC_CFG_BF16CVT) |
+                                         BIT_ULL(V5_MMSC_CFG_ZFH) |
+                                         BIT_ULL(V5_MMSC_CFG_L2CMP_CFG) |
+                                         BIT_ULL(V5_MMSC_CFG_L2C) |
+                                         BIT_ULL(V5_MMSC_CFG_IOCP) |
+                                         BIT_ULL(V5_MMSC_CFG_RVARCH) |
+                                         BIT_ULL(V5_MMSC_CFG_TLB_RAM_CMD) |
+                                         BIT_ULL(V5_MMSC_CFG_CCTL_FL_UL) |
+                                         BIT_ULL(V5_MMSC_CFG_HSPO);
+}
+
 static void rv64_andes_nx25_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
@@ -4274,6 +4380,7 @@ static const TypeInfo riscv_cpu_type_infos[] = {
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX45,     MXL_RV64,  rv64_andes_ax45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX45MPV,  MXL_RV64,  rv64_andes_ax45mpv_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX65,     MXL_RV64,  rv64_andes_ax65_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX66,     MXL_RV64,  rv64_andes_ax66_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX25,     MXL_RV64,  rv64_andes_nx25_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX25F,    MXL_RV64,  rv64_andes_nx25f_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX27V,    MXL_RV64,  rv64_andes_nx27v_cpu_init),
