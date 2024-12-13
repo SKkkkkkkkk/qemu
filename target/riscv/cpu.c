@@ -1019,6 +1019,95 @@ static void rv64_andes_ax45mpv_cpu_init(Object *obj)
                                          BIT_ULL(V5_MMSC_CFG_MSC_EXT3);
 }
 
+static void rv64_andes_ax46mp_cpu_init(Object *obj)
+{
+    RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
+    CPURISCVState *env = &RISCV_CPU(obj)->env;
+
+    riscv_cpu_set_misa_ext(
+            env, RVI | RVM | RVA | RVF | RVD | RVC | RVB | RVS | RVU | RVX);
+    rv64_andes_common_cpu_init(obj, VM_1_10_SV48, andes_set_mmsc_cfg_l2c);
+
+    /* Set CPU ID */
+    cfg->marchid = ANDES_CPUID_AX46;
+
+    cfg->ext_zihintpause = true;
+    cfg->ext_zicbom = true;
+    cfg->ext_zicboz = true;
+    cfg->ext_zcb = true;
+    cfg->ext_zfh = true;
+    cfg->ext_zfhmin = true;
+    cfg->ext_zfbfmin = true;
+    cfg->ext_zvfbfmin = true;
+    cfg->ext_zvfbfwma = true;
+
+    /* CSR_MMSC_CFG = 0x2000236005f03d */
+    env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
+                                         BIT(V5_MMSC_CFG_TLB_ECC2) |
+                                         BIT(V5_MMSC_CFG_ECD) |
+                                         BIT(V5_MMSC_CFG_PFT) |
+                                         BIT(V5_MMSC_CFG_HSP) |
+                                         BIT(V5_MMSC_CFG_VPLIC) |
+                                         BIT(V5_MMSC_CFG_EV5PE) |
+                                         BIT(V5_MMSC_CFG_LMSLVP) |
+                                         BIT(V5_MMSC_CFG_PMNDS) |
+                                         BIT(V5_MMSC_CFG_CCTLCSR) |
+                                         BIT(V5_MMSC_CFG_VCCTL) |
+                                         BIT(V5_MMSC_CFG_EDSP) |
+                                         BIT(V5_MMSC_CFG_PPMA) |
+                                         BIT_ULL(V5_MMSC_CFG_BF16CVT) |
+                                         BIT_ULL(V5_MMSC_CFG_ZFH) |
+                                         BIT_ULL(V5_MMSC_CFG_FINV) |
+                                         BIT_ULL(V5_MMSC_CFG_TLB_RAM_CMD);
+}
+
+static void rv64_andes_ax46mpv_cpu_init(Object *obj)
+{
+    RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
+    CPURISCVState *env = &RISCV_CPU(obj)->env;
+
+    riscv_cpu_set_misa_ext(
+            env, RVI | RVM | RVA | RVF | RVD | RVC | RVB | RVS | RVU | RVV | RVX);
+    rv64_andes_common_cpu_init(obj, VM_1_10_SV48, andes_set_mmsc_cfg_l2c);
+
+    /* Set CPU ID */
+    cfg->marchid = ANDES_CPUID_AX46;
+
+    cfg->ext_zihintpause = true;
+    cfg->ext_zicbom = true;
+    cfg->ext_zicboz = true;
+    cfg->ext_zcb = true;
+    cfg->ext_zfh = true;
+    cfg->ext_zfhmin = true;
+    cfg->ext_zfbfmin = true;
+    cfg->ext_zvfbfmin = true;
+    cfg->ext_zvfbfwma = true;
+
+    /* Vector */
+    env->vext_ver = VEXT_VERSION_1_00_0;
+    cfg->vlenb = 1024;
+    cfg->elen  = 64;
+
+    /* CSR_MMSC_CFG = 0x2000236005f03d */
+    env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
+                                         BIT(V5_MMSC_CFG_TLB_ECC2) |
+                                         BIT(V5_MMSC_CFG_ECD) |
+                                         BIT(V5_MMSC_CFG_PFT) |
+                                         BIT(V5_MMSC_CFG_HSP) |
+                                         BIT(V5_MMSC_CFG_VPLIC) |
+                                         BIT(V5_MMSC_CFG_EV5PE) |
+                                         BIT(V5_MMSC_CFG_LMSLVP) |
+                                         BIT(V5_MMSC_CFG_PMNDS) |
+                                         BIT(V5_MMSC_CFG_CCTLCSR) |
+                                         BIT(V5_MMSC_CFG_VCCTL) |
+                                         BIT(V5_MMSC_CFG_EDSP) |
+                                         BIT(V5_MMSC_CFG_PPMA) |
+                                         BIT_ULL(V5_MMSC_CFG_BF16CVT) |
+                                         BIT_ULL(V5_MMSC_CFG_ZFH) |
+                                         BIT_ULL(V5_MMSC_CFG_FINV) |
+                                         BIT_ULL(V5_MMSC_CFG_TLB_RAM_CMD);
+}
+
 static void rv64_andes_ax65_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
@@ -1485,6 +1574,87 @@ static void rv32_andes_a45_cpu_init(Object *obj)
 
     /* Set CPU ID */
     cfg->marchid = ANDES_CPUID_A45;
+
+    /* CSR_MMSC_CFG = 0xe005f039 */
+    env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
+                                         BIT(V5_MMSC_CFG_ECD) |
+                                         BIT(V5_MMSC_CFG_PFT) |
+                                         BIT(V5_MMSC_CFG_HSP) |
+                                         BIT(V5_MMSC_CFG_VPLIC) |
+                                         BIT(V5_MMSC_CFG_EV5PE) |
+                                         BIT(V5_MMSC_CFG_LMSLVP) |
+                                         BIT(V5_MMSC_CFG_PMNDS) |
+                                         BIT(V5_MMSC_CFG_CCTLCSR) |
+                                         BIT(V5_MMSC_CFG_VCCTL) |
+                                         BIT(V5_MMSC_CFG_EDSP) |
+                                         BIT(V5_MMSC_CFG_PPMA) |
+                                         BIT(V5_MMSC_CFG_MSC_EXT);
+}
+
+static void rv32_andes_a46mp_cpu_init(Object *obj)
+{
+    RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
+    CPURISCVState *env = &RISCV_CPU(obj)->env;
+
+    riscv_cpu_set_misa_ext(
+            env, RVI | RVM | RVA | RVF | RVD | RVC | RVB | RVS | RVU | RVX);
+    rv32_andes_common_cpu_init(obj, VM_1_10_SV32, andes_set_mmsc_cfg_l2c);
+
+    /* Set CPU ID */
+    cfg->marchid = ANDES_CPUID_A46;
+
+    cfg->ext_zihintpause = true;
+    cfg->ext_zicbom = true;
+    cfg->ext_zicboz = true;
+    cfg->ext_zcb = true;
+    cfg->ext_zfh = true;
+    cfg->ext_zfhmin = true;
+    cfg->ext_zfbfmin = true;
+    cfg->ext_zvfbfmin = true;
+    cfg->ext_zvfbfwma = true;
+
+    /* CSR_MMSC_CFG = 0xe005f039 */
+    env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
+                                         BIT(V5_MMSC_CFG_ECD) |
+                                         BIT(V5_MMSC_CFG_PFT) |
+                                         BIT(V5_MMSC_CFG_HSP) |
+                                         BIT(V5_MMSC_CFG_VPLIC) |
+                                         BIT(V5_MMSC_CFG_EV5PE) |
+                                         BIT(V5_MMSC_CFG_LMSLVP) |
+                                         BIT(V5_MMSC_CFG_PMNDS) |
+                                         BIT(V5_MMSC_CFG_CCTLCSR) |
+                                         BIT(V5_MMSC_CFG_VCCTL) |
+                                         BIT(V5_MMSC_CFG_EDSP) |
+                                         BIT(V5_MMSC_CFG_PPMA) |
+                                         BIT(V5_MMSC_CFG_MSC_EXT);
+}
+
+static void rv32_andes_a46mpv_cpu_init(Object *obj)
+{
+    RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
+    CPURISCVState *env = &RISCV_CPU(obj)->env;
+
+    riscv_cpu_set_misa_ext(
+            env, RVI | RVM | RVA | RVF | RVD | RVC | RVB | RVS | RVU | RVV | RVX);
+    rv32_andes_common_cpu_init(obj, VM_1_10_SV32, andes_set_mmsc_cfg_l2c);
+
+    /* Set CPU ID */
+    cfg->marchid = ANDES_CPUID_A46;
+
+    cfg->ext_zihintpause = true;
+    cfg->ext_zicbom = true;
+    cfg->ext_zicboz = true;
+    cfg->ext_zcb = true;
+    cfg->ext_zfh = true;
+    cfg->ext_zfhmin = true;
+    cfg->ext_zfbfmin = true;
+    cfg->ext_zvfbfmin = true;
+    cfg->ext_zvfbfwma = true;
+
+    /* Vector */
+    env->vext_ver = VEXT_VERSION_1_00_0;
+    cfg->vlenb = 1024;
+    cfg->elen  = 64;
 
     /* CSR_MMSC_CFG = 0xe005f039 */
     env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
@@ -4352,6 +4522,8 @@ static const TypeInfo riscv_cpu_type_infos[] = {
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A25,      MXL_RV32,  rv32_andes_a25_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A27,      MXL_RV32,  rv32_andes_a27_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A45,      MXL_RV32,  rv32_andes_a45_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A46MP,    MXL_RV32,  rv32_andes_a46mp_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A46MPV,   MXL_RV32,  rv32_andes_a46mpv_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D23,      MXL_RV32,  rv32_andes_d23_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D25,      MXL_RV32,  rv32_andes_d25_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D25F,     MXL_RV32,  rv32_andes_d25f_cpu_init),
@@ -4379,6 +4551,8 @@ static const TypeInfo riscv_cpu_type_infos[] = {
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX27,     MXL_RV64,  rv64_andes_ax27_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX45,     MXL_RV64,  rv64_andes_ax45_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX45MPV,  MXL_RV64,  rv64_andes_ax45mpv_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX46MP,   MXL_RV64,  rv64_andes_ax46mp_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX46MPV,  MXL_RV64,  rv64_andes_ax46mpv_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX65,     MXL_RV64,  rv64_andes_ax65_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX66,     MXL_RV64,  rv64_andes_ax66_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_NX25,     MXL_RV64,  rv64_andes_nx25_cpu_init),
