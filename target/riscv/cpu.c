@@ -992,7 +992,7 @@ static void rv64_andes_ax45mpv_cpu_init(Object *obj)
 
     /* Vector */
     env->vext_ver = VEXT_VERSION_1_00_0;
-    cfg->vlenb = 1024;
+    cfg->vlenb = 128;
     cfg->elen  = 64;
 
     /* CSR_MMSC_CFG = 0x801079174005b038 */
@@ -1085,7 +1085,7 @@ static void rv64_andes_ax46mpv_cpu_init(Object *obj)
 
     /* Vector */
     env->vext_ver = VEXT_VERSION_1_00_0;
-    cfg->vlenb = 1024;
+    cfg->vlenb = 128;
     cfg->elen  = 64;
 
     /* CSR_MMSC_CFG = 0x2000236005f03d */
@@ -1306,7 +1306,7 @@ static void rv64_andes_nx27v_cpu_init(Object *obj)
     cfg->mmu = false;
 
     /* RVV extension */
-    cfg->vlenb = 512;
+    cfg->vlenb = 64;
     cfg->elen = 64;
 
     /* Set CPU ID */
@@ -1342,7 +1342,7 @@ static void rv64_andes_nx45v_cpu_init(Object *obj)
 
     /* RVV extension */
     env->vext_ver = VEXT_VERSION_1_00_0;
-    cfg->vlenb = 512;
+    cfg->vlenb = 64;
     cfg->elen = 64;
 
     /* Set CPU ID & Implementation ID */
@@ -1653,7 +1653,7 @@ static void rv32_andes_a46mpv_cpu_init(Object *obj)
 
     /* Vector */
     env->vext_ver = VEXT_VERSION_1_00_0;
-    cfg->vlenb = 1024;
+    cfg->vlenb = 128;
     cfg->elen  = 64;
 
     /* CSR_MMSC_CFG = 0xe005f039 */
