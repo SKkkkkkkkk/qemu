@@ -255,7 +255,8 @@ void isa_ext_update_enabled(RISCVCPU *cpu, uint32_t ext_offset, bool en)
 
 bool riscv_cpu_is_vendor(Object *cpu_obj)
 {
-    return object_dynamic_cast(cpu_obj, TYPE_RISCV_VENDOR_CPU) != NULL;
+    return (object_dynamic_cast(cpu_obj, TYPE_RISCV_VENDOR_CPU) != NULL &&
+                               !is_andes_riscv_cpu_type(cpu_obj));
 }
 
 const char * const riscv_int_regnames[] = {
