@@ -231,6 +231,10 @@ const RISCVIsaExtData isa_edata_arr[] = {
     ISA_EXT_DATA_ENTRY(xtheadmempair, PRIV_VERSION_1_11_0, ext_xtheadmempair),
     ISA_EXT_DATA_ENTRY(xtheadsync, PRIV_VERSION_1_11_0, ext_xtheadsync),
     ISA_EXT_DATA_ENTRY(xventanacondops, PRIV_VERSION_1_12_0, ext_XVentanaCondOps),
+    ISA_EXT_DATA_ENTRY(xandesv5ops, PRIV_VERSION_1_12_0, ext_XAndesV5Ops),
+    ISA_EXT_DATA_ENTRY(xandescodenseops, PRIV_VERSION_1_12_0, ext_XAndesCodenseOps),
+    ISA_EXT_DATA_ENTRY(xandesace, PRIV_VERSION_1_12_0, ext_XAndesAce),
+    ISA_EXT_DATA_ENTRY(xandesacemulti, PRIV_VERSION_1_12_0, ext_XAndesAceMulti),
 
     DEFINE_PROP_END_OF_LIST(),
 };
