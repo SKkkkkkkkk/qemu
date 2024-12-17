@@ -141,8 +141,8 @@ void qemu_set_FRF(CPURISCVState *env, uint32_t index, uint64_t value)
 unsigned char *qemu_get_VRF(CPURISCVState *env, uint32_t index)
 {
     /* Should we check Vector enable? */
-    /* div 64, check cpu.h */
-    uint16_t vlenq = env_archcpu(env)->cfg.vlenb >> 6;
+    /* div 8, check cpu.h */
+    uint16_t vlenq = env_archcpu(env)->cfg.vlenb >> 3;
     /* get v register index pointer */
     uint64_t *vreg = &env->vreg[index * vlenq];
     return (unsigned char *)vreg;
@@ -151,8 +151,8 @@ unsigned char *qemu_get_VRF(CPURISCVState *env, uint32_t index)
 void qemu_set_VRF(CPURISCVState *env, uint32_t index, unsigned char *value)
 {
     /* Should we check Vector enable? */
-    /* div 64, check cpu.h */
-    uint16_t vlenq = env_archcpu(env)->cfg.vlenb >> 6;
+    /* div 8, check cpu.h */
+    uint16_t vlenq = env_archcpu(env)->cfg.vlenb >> 3;
     /* only update mstatus, doesn't update ctx->mstatus_vs */
 #if !defined(CONFIG_USER_ONLY)
     /* mstatus.VS doesn't disable (init/clean/dirty) */
@@ -160,8 +160,8 @@ void qemu_set_VRF(CPURISCVState *env, uint32_t index, unsigned char *value)
         env->mstatus |= MSTATUS_VS;
     }
 #endif
-    /* vlenq is div 64, memcpy use byte size 8 */
-    memcpy(&env->vreg[index * vlenq], value, vlenq * 8);
+    /* memcpy use byte size = vlenb  */
+    memcpy(&env->vreg[index * vlenq], value, env_archcpu(env)->cfg.vlenb);
 }
 
 /*
