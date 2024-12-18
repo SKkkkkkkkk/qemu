@@ -68,6 +68,9 @@ int32_t gdb_ace_load_lib(const char *so_name)
         ace_acr_info_list = (AceAcrInfo *) dlsym(handle, "acr_list");
     }
 
+    qemu_printf("Load ACE debugger library '%s' successfully\n",
+                so_name);
+
     return 0;
 }
 
