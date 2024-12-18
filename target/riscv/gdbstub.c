@@ -377,7 +377,8 @@ static int andes_ace_get_reg(CPUState *cs, int reg_n)
         /* execute the code */
         int exec_out = qemu_ace_agent_run_insn(env, insn);
         if (exec_out != 0) {
-            qemu_printf("Unable to execute ACE program\n");
+            qemu_printf("ACE program execution failure: Verify the CSR "
+                        "mmisc_ctl.ACES bitfields configuration\n");
 
             /* Restore temp register */
             env->gpr[5] = s0;
