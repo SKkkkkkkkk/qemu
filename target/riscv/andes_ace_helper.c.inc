@@ -174,28 +174,28 @@ uint64_t qemu_get_MEM(CPURISCVState *env, uint64_t vaddr, uint32_t size)
     switch (size) {
     case 1:
 #ifndef CONFIG_USER_ONLY
-        data = cpu_ldub_data_ra(env, vaddr, GETPC());
+        data = cpu_ldub_data_ra(env, vaddr, env->ace_ra);
 #else
         data = cpu_ldub_data(env, vaddr);
 #endif
         break;
     case 2:
 #ifndef CONFIG_USER_ONLY
-        data = cpu_lduw_data_ra(env, vaddr, GETPC());
+        data = cpu_lduw_data_ra(env, vaddr, env->ace_ra);
 #else
         data = cpu_lduw_data(env, vaddr);
 #endif
         break;
     case 4:
 #ifndef CONFIG_USER_ONLY
-        data = cpu_ldl_data_ra(env, vaddr, GETPC());
+        data = cpu_ldl_data_ra(env, vaddr, env->ace_ra);
 #else
         data = cpu_ldl_data(env, vaddr);
 #endif
         break;
     case 8:
 #ifndef CONFIG_USER_ONLY
-        data = cpu_ldq_data_ra(env, vaddr, GETPC());
+        data = cpu_ldq_data_ra(env, vaddr, env->ace_ra);
 #else
         data = cpu_ldq_data(env, vaddr);
 #endif
@@ -212,28 +212,28 @@ void qemu_set_MEM(CPURISCVState *env, uint64_t vaddr,
     switch (size) {
     case 1:
 #ifndef CONFIG_USER_ONLY
-        cpu_stb_data_ra(env, vaddr, value, GETPC());
+        cpu_stb_data_ra(env, vaddr, value, env->ace_ra);
 #else
         cpu_stb_data(env, vaddr, value);
 #endif
         break;
     case 2:
 #ifndef CONFIG_USER_ONLY
-        cpu_stw_data_ra(env, vaddr, value, GETPC());
+        cpu_stw_data_ra(env, vaddr, value, env->ace_ra);
 #else
         cpu_stw_data(env, vaddr, value);
 #endif
         break;
     case 4:
 #ifndef CONFIG_USER_ONLY
-        cpu_stl_data_ra(env, vaddr, value, GETPC());
+        cpu_stl_data_ra(env, vaddr, value, env->ace_ra);
 #else
         cpu_stl_data(env, vaddr, value);
 #endif
         break;
     case 8:
 #ifndef CONFIG_USER_ONLY
-        cpu_stq_data_ra(env, vaddr, value, GETPC());
+        cpu_stq_data_ra(env, vaddr, value, env->ace_ra);
 #else
         cpu_stq_data(env, vaddr, value);
 #endif

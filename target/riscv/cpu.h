@@ -508,6 +508,7 @@ struct CPUArchState {
     /* Andes ACE agent symbols */
     AceAgentReg ace_agent_register;
     AceAgentRunInsn ace_agent_run_insn;
+    uintptr_t ace_ra;
 
 #ifndef CONFIG_USER_ONLY
     MemoryRegion *cpu_as_root;

@@ -209,6 +209,8 @@ void helper_andes_v5_hsp_check(CPURISCVState *env, target_ulong val)
 #include "andes_ace_helper.h"
 target_ulong helper_andes_ace(CPURISCVState *env, target_ulong opcode)
 {
+    /* Save current function ra for TCG TB lookup when run ACE insn. */
+    env->ace_ra = GETPC();
     int ret = qemu_ace_agent_run_insn(env, opcode);
     if (ret != 0) {
         /* wrong ACE instruction seems return RESERVED_INSN(=1), not ILL Insn */
