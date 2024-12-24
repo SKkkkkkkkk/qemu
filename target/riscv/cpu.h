@@ -508,7 +508,18 @@ struct CPUArchState {
     /* Andes ACE agent symbols */
     AceAgentReg ace_agent_register;
     AceAgentRunInsn ace_agent_run_insn;
+    AceAgentGetRegister ace_agent_get_register;
+    AceAgentSetRegister ace_agent_set_register;
+
+    /* Andes ACE records the return address of the instruction for exception */
     uintptr_t ace_ra;
+
+    /* Andes ACE debugger info  */
+    uint32_t ace_acracm_reg_number;
+    uint32_t *ace_lib_for_gdb_len;
+    char *ace_lib_for_gdb;
+    void *ace_acr_info_list;
+    unsigned char *ace_acr_value;
 
 #ifndef CONFIG_USER_ONLY
     MemoryRegion *cpu_as_root;

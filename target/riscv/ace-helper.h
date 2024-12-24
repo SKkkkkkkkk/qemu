@@ -15,7 +15,7 @@
 #endif
 
 /* define ACE agent version, just use int value */
-#define ACE_AGENT_VERSION   100
+#define ACE_AGENT_VERSION   101
 
 enum ACE_CB_NAME {
     ACE_GET_XRF = 0,
@@ -36,6 +36,7 @@ enum ACE_CB_NAME {
     ACE_GET_CPU_PRIV,
     ACE_GET_ACES,
     ACE_SET_ACES,
+    ACE_ADD_REG_DESC,
     ACE_CB_NAME_MAX
 };
 
@@ -80,14 +81,29 @@ typedef void (*func3m)(void *, uint64_t x, uint64_t y, uint32_t z);
 typedef AcmStatus (*func3a)(void *, uint64_t x, uint32_t y, char *z);
 #define FUNC_3A(f, p0, p1, p2, p3) ((func3a)(f))(p0, p1, p2, p3)
 
+/* For GDB add reg description */
+typedef void (*func5a)(void *, const char *g, uint32_t x, uint32_t n,
+                       uint32_t e, int t); /* assume enum type is int */
+#define FUNC_5A(f, p0, p1, p2, p3, p4, p5) ((func5a)(f))(p0, p1, p2, p3, p4, p5)
+
+
 typedef int32_t (*AceAgentReg)(void *, void *, uint32_t,
                                const char*, uint64_t, int32_t);
 typedef int32_t (*AceAgentRunInsn)(void *, uint32_t, uint64_t);
 typedef int32_t (*AceAgentVersion)(void *);
 typedef char* (*AceAgentCopilotVersion)(void *, uint64_t);
+typedef uint64_t* (*AceAgentGetRegister)(void *, uint64_t, uint32_t,
+                                         uint32_t, uint32_t *);
+typedef uint64_t* (*AceAgentSetRegister)(void *, uint64_t, uint32_t, uint32_t,
+                                         const uint64_t *, uint32_t);
 EXPORT_C int32_t ace_agent_register(void *, AceAgentFuncPtr *,
                                     uint32_t, const char *, uint64_t, int32_t);
 EXPORT_C int32_t ace_agent_run_insn(void *, uint32_t, uint64_t);
 EXPORT_C int32_t ace_agent_version(void *);
 EXPORT_C const char *ace_agent_copilot_version(void *, uint64_t);
+EXPORT_C uint64_t *ace_agent_get_register(void *, uint64_t, uint32_t,
+                                          uint32_t, uint32_t *);
+EXPORT_C void ace_agent_set_register(void *, uint64_t, uint32_t, uint32_t,
+                                     const uint64_t *, uint32_t);
+
 #endif

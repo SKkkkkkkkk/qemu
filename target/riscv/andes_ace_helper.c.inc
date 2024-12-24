@@ -21,6 +21,7 @@ AceAgentFuncPtr ace_agent_cb_func_table[] = {
     (AceAgentFuncPtr)qemu_get_hart_id,
     (AceAgentFuncPtr)qemu_get_cpu_priv,
     (AceAgentFuncPtr)qemu_get_ACES, (AceAgentFuncPtr)qemu_set_ACES,
+    (AceAgentFuncPtr)qemu_ace_add_reg_desc,
     };
 
 /* QEMU ACE agent handler */
@@ -69,6 +70,8 @@ int32_t qemu_ace_agent_register(CPURISCVState *env, const char *extlibpath,
     }
     if (ace_agent_version(env) != ACE_AGENT_VERSION) {
         qemu_printf("QEMU and ACE agent version don't match\n");
+        qemu_printf("QEMU ACE version=%d, ACE Agent version=%d\n",
+                    ACE_AGENT_VERSION, ace_agent_version(env));
         return -1;
     }
     if (env->ace_agent_register == NULL) {
@@ -100,6 +103,43 @@ int32_t qemu_ace_agent_run_insn(CPURISCVState *env, uint32_t opcode)
     hartid = 0;
 #endif
     return env->ace_agent_run_insn(env, opcode, hartid);
+}
+
+uint64_t *qemu_ace_agent_get_register(CPURISCVState *env, uint32_t g,
+                                    uint32_t i, uint32_t *value_len)
+{
+    target_ulong hartid;
+    if (env->ace_agent_get_register == NULL) {
+        if (qemu_ace_agent_load_symbol("ace_agent_get_register",
+            (void **)&env->ace_agent_get_register) != 0) {
+            return NULL;
+        }
+    }
+#ifndef CONFIG_USER_ONLY
+    hartid = env->mhartid;
+#else
+    hartid = 0;
+#endif
+    return env->ace_agent_get_register(env, hartid, g, i, value_len);
+}
+
+void qemu_ace_agent_set_register(CPURISCVState *env, uint32_t g,
+                                    uint32_t i, const uint64_t *value,
+                                    uint32_t value_len)
+{
+    target_ulong hartid;
+    if (env->ace_agent_set_register == NULL) {
+        if (qemu_ace_agent_load_symbol("ace_agent_set_register",
+            (void **)&env->ace_agent_set_register) != 0) {
+            return;
+        }
+    }
+#ifndef CONFIG_USER_ONLY
+    hartid = env->mhartid;
+#else
+    hartid = 0;
+#endif
+    env->ace_agent_set_register(env, hartid, g, i, value, value_len);
 }
 
 uint64_t qemu_get_XRF(CPURISCVState *env, uint32_t index)
@@ -335,4 +375,104 @@ uint32_t qemu_get_cpu_priv(CPURISCVState *env)
 #else
     return 0;
 #endif
+}
+
+int32_t qemu_ace_load_lib_gdb(CPURISCVState *env, const char *so_name)
+{
+    void *handle;
+    /*
+     * Check whether already load ACE debugger library,
+     * we don't support multi-ace and/or multi-ace-dbg
+     */
+    if (env->ace_lib_for_gdb != NULL) {
+        return 0;
+    }
+
+    /* dlopen a shared object named 'so_name' */
+    handle = dlopen(so_name, RTLD_NOW | RTLD_LOCAL);
+    if (handle == NULL) {
+        return -1;
+    }
+
+    env->ace_lib_for_gdb =
+        (char *) dlsym(handle, "ace_lib_for_gdb");
+    if (env->ace_lib_for_gdb == NULL) {
+        qemu_printf("Unable to load symbol ace_lib_for_gdb\n");
+        dlclose(handle);
+        return -1;
+    }
+
+    env->ace_lib_for_gdb_len =
+        (unsigned *) dlsym(handle, "ace_lib_for_gdb_len");
+    if (env->ace_lib_for_gdb_len == NULL) {
+        qemu_printf("Unable to load symbol ace_lib_for_gdb_len\n");
+        dlclose(handle);
+        return -1;
+    }
+
+    qemu_printf("Load ACE debugger library '%s' successfully\n",
+                so_name);
+    dlclose(handle);
+
+    return 0;
+}
+
+int32_t qemu_ace_get_filename_for_gdb(unsigned char *platform,
+                                      char *soname, CPUState *cs)
+{
+    RISCVCPU *cpu = RISCV_CPU(cs);
+    CPURISCVState *env = &cpu->env;
+    int32_t ret = 0;
+
+    if (env->ace_lib_for_gdb) {
+        /* use size as filename to do fopen */
+        sprintf(soname, "%u", *env->ace_lib_for_gdb_len);
+
+        FILE *fd = fopen(soname, "w");
+        if (fd == NULL) {
+            qemu_printf("Failed to create temporary file for ACE "
+                        "debugger information\n");
+            ret = -2;
+        } else {
+            if (fwrite(env->ace_lib_for_gdb, sizeof(char),
+                *env->ace_lib_for_gdb_len, fd) != *env->ace_lib_for_gdb_len) {
+                qemu_printf("Failed to write temporary file for ACE "
+                        "debugger information\n");
+                ret = -3;
+            }
+            fclose(fd);
+        }
+    } else {
+        qemu_printf("You should assign ACE debugger library first\n");
+        ret = -4;
+    }
+
+    return ret;
+}
+
+void qemu_ace_add_reg_desc(CPURISCVState *env, const char *GroupName,
+                           uint32_t GroupIdx, uint32_t NumOfEntry,
+                           uint32_t EntryWidth, int TypeIn)
+{
+    AceAcrInfo *s;
+    /* ACE simulator should add reg description by group ordering */
+    if (GroupIdx != env->ace_acracm_reg_number) {
+        qemu_printf("ACE add reg description failed for group idx = %d\n",
+                    GroupIdx);
+        return;
+    }
+    env->ace_acr_info_list = g_realloc(env->ace_acr_info_list,
+        (env->ace_acracm_reg_number + 1) * sizeof(AceAcrInfo));
+    if (env->ace_acr_info_list == NULL) {
+        qemu_printf("ACE add reg description failed since realloc memory\n");
+        return;
+    }
+    AceAcrInfo *acr_info_list = env->ace_acr_info_list;
+    s = &acr_info_list[env->ace_acracm_reg_number];
+    memset(s, 0, sizeof(AceAcrInfo));
+    s->width = EntryWidth;
+    s->num = NumOfEntry;
+    s->idx = GroupIdx;
+    strncpy(s->name, GroupName, sizeof(s->name) - 1);
+    env->ace_acracm_reg_number++;
 }

@@ -10,6 +10,17 @@
 #include "qemu/qemu-print.h"
 #include "ace-helper.h"
 
+/* AceAcrInfo records essential information of ACR and SRAM-type ACM */
+typedef struct {
+    unsigned width;
+    unsigned num;
+    unsigned idx;
+    char name[1024 - (sizeof(unsigned) * 3)];
+} AceAcrInfo;
+
+int32_t qemu_ace_load_lib_gdb(CPURISCVState *env, const char *so_name);
+int32_t qemu_ace_get_filename_for_gdb(unsigned char *, char *, CPUState *);
+
 /* data access */
 uint64_t qemu_get_XRF(CPURISCVState *env, uint32_t index);
 void qemu_set_XRF(CPURISCVState *env, uint32_t index, uint64_t value);
@@ -44,9 +55,17 @@ uint64_t qemu_get_hart_id(CPURISCVState *env);
 /* CPU Priv Mode */
 uint32_t qemu_get_cpu_priv(CPURISCVState *env);
 
+/* GDB add register description */
+void qemu_ace_add_reg_desc(CPURISCVState *env, const char *GroupName,
+                       uint32_t GroupIdx, uint32_t NumOfEntry,
+                       uint32_t EntryWidth, int TypeIn);
 int32_t qemu_ace_agent_load(const char *filename);
 int32_t qemu_ace_agent_load_symbol(const char *symbol_name, void **func_ptr);
 int32_t qemu_ace_agent_register(CPURISCVState *env, const char *extlibpath,
                                 int32_t multi);
 int32_t qemu_ace_agent_run_insn(CPURISCVState *env, uint32_t opcode);
+uint64_t *qemu_ace_agent_get_register(CPURISCVState *, uint32_t, uint32_t,
+                                      uint32_t *);
+void qemu_ace_agent_set_register(CPURISCVState *, uint32_t, uint32_t,
+                                 const uint64_t *, uint32_t);
 #endif

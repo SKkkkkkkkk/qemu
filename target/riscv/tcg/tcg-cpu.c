@@ -808,7 +808,6 @@ static void riscv_cpu_validate_profiles(RISCVCPU *cpu)
 
 /* Andes ACE */
 #include "andes_ace_helper.h"
-#include "gdbstub/andes_ace_gdb.h"
 static void riscv_cpu_validate_andes_ace(RISCVCPU *cpu, Error **errp)
 {
     CPURISCVState *env = &cpu->env;
@@ -838,7 +837,7 @@ static void riscv_cpu_validate_andes_ace(RISCVCPU *cpu, Error **errp)
             }
         }
         if (cpu->cfg.XAndesAceLibDbg != NULL) {
-            if (gdb_ace_load_lib(cpu->cfg.XAndesAceLibDbg)) {
+            if (qemu_ace_load_lib_gdb(env, cpu->cfg.XAndesAceLibDbg)) {
                 error_setg(errp, "xandesacelibdbg '%s' load/register failed",
                            cpu->cfg.XAndesAceLibDbg);
                 return;

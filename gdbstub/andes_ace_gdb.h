@@ -7,46 +7,17 @@
 #ifndef _ANDES_ACE_GDB_H_
 #define _ANDES_ACE_GDB_H_
 
-/* AceAcrInfo records essential information of ACR and SRAM-type ACM */
-typedef struct {
-    char name[1024];
-    unsigned width;
-    unsigned num;
-} AceAcrInfo;
+#define NDS_QUERY_TARGET    "SID"
+#define NDS_QUERY_ENDIAN    "LE"
+#define NDS_QUERY_TARGET_CMD    "nds query target"
+#define NDS_QUERY_ENDIAN_CMD    "nds query endian"
+#define NDS_QUERY_CPUID_CMD     "nds query cpuid"
+#define NDS_ACE_CMD             "nds ace "
+#define NDS_VA_CMD              "nds va "
+#define NDS_OTHER_CMD           "nds "
 
-/*
- * AceInsnType represents what kind of utility instruction
- * acr_io1 : ACR utility instruction and exists one GPR for din/dout
- * acr_io2 : ACR utility instruction and exists two GPRs for din/dout
- *           (din_high, din_low/dout_high, din_low)
- * acm_io1 : ACM utility instruction and exists one GPR for din/dout
- * acm_io2 : ACM utility instruction and exists two GPRs for din/dout
- *           (din_high, din_low/dout_high, din_low)
- */
-typedef enum {
-  acr_io1 = 0, acr_io2 = 1,
-  acm_io1 = 2, acm_io2 = 3
-} AceInsnType;
+/* this function is coming from andes_ace_help */
+int32_t qemu_ace_get_filename_for_gdb(unsigned char *, char *, CPUState *);
 
-typedef struct {
-  AceInsnType version;
-  unsigned insn;
-} AceUtilInsn;
-
-typedef struct {
-  unsigned num;
-  AceUtilInsn *code;
-} AceInsnCode;
-
-extern unsigned *ace_acr_reg_count;
-extern unsigned *ace_acr_type_count;
-extern unsigned *ace_lib_for_gdb_len;
-extern const char *ace_lib_for_gdb;
-extern AceAcrInfo *ace_acr_info_list;
-extern AceInsnCode *(*ace_gen_get_value_code) (char *name, unsigned index);
-extern AceInsnCode *(*ace_gen_set_value_code) (char *name, unsigned index);
-
-int32_t gdb_ace_load_lib(const char *);
-int32_t gdb_ace_get_file_name_for_gdb(unsigned char *, char *);
 int gdb_handle_query_rcmd_andes_query(GArray *, void *);
 #endif
