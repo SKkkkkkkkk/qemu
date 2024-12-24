@@ -637,10 +637,16 @@ int riscv_pmu_setup_timer(CPURISCVState *env, uint64_t value, uint32_t ctr_idx)
     RISCVCPU *cpu = env_archcpu(env);
     PMUCTRState *counter = &env->pmu_ctrs[ctr_idx];
 
-    /* No need to setup a timer if LCOFI is disabled when OF is set */
-    if (!riscv_pmu_counter_valid(cpu, ctr_idx) || !cpu->cfg.ext_sscofpmf ||
-        pmu_hpmevent_is_of_set(env, ctr_idx) || riscv_pmu_has_andes_pmnds(cpu)) {
-        return -1;
+    if (riscv_pmu_has_andes_pmnds(cpu)) {
+        if (!riscv_pmu_counter_valid(cpu, ctr_idx)) {
+            return -1;
+        }
+    } else {
+        /* No need to setup a timer if LCOFI is disabled when OF is set */
+        if (!riscv_pmu_counter_valid(cpu, ctr_idx) || !cpu->cfg.ext_sscofpmf ||
+            pmu_hpmevent_is_of_set(env, ctr_idx)) {
+            return -1;
+        }
     }
 
     if (value) {
