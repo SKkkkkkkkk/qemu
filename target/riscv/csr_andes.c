@@ -952,6 +952,7 @@ static AndesCsrConfigInfo csr_mmsc_cfg_map[] = {
     {CONFIG_BOOL,   MASK_MMSC_CFG_MSC_EXT3, "msc-ext3"},
 #endif
 };
+
 static AndesCsrConfigInfo csr_mmsc_cfg2_map[]  = {
     {CONFIG_BOOL,   MASK_MMSC_CFG2_BF16CVT, "isa-bf16cvt"},
     {CONFIG_BOOL,   MASK_MMSC_CFG2_ZFH, "isa-zfh"},
@@ -971,6 +972,7 @@ static AndesCsrConfigInfo csr_mmsc_cfg2_map[]  = {
     {CONFIG_BOOL,   MASK_MMSC_CFG2_RVARCH2, "mmsc-cfg-rvarch2"},
     {CONFIG_BOOL,   MASK_MMSC_CFG2_MSC_EXT3, "msc-ext3"},
 };
+
 static AndesCsrConfigInfo csr_mmsc_cfg3_map[]  = {
     {CONFIG_BOOL,   MASK_MMSC_CFG3_HVMCSR, "mmsc-cfg-hvmcsr"},
 };
@@ -983,10 +985,24 @@ static AndesCsrConfigInfo csr_mrvarch_cfg_map[] = {
     {CONFIG_BOOL,   MASK_MRVARCH_CFG_MRVARCH_EXT3, "mrvarch_cfg_mrvarch_ext3"},
 #endif
 };
+
 static AndesCsrConfigInfo csr_mrvarch_cfg2_map[]  = {
     {CONFIG_BOOL,   MASK_MRVARCH_CFG2_ZVQMAC, "isa-zvqmac"},
     {CONFIG_BOOL,   MASK_MRVARCH_CFG2_ZVLSSEG, "isa-zvlsseg"},
     {CONFIG_BOOL,   MASK_MRVARCH_CFG2_MRVARCH_EXT3, "mrvarch_cfg_mrvarch_ext3"},
+};
+
+static AndesCsrConfigInfo csr_mrvarch_cfg3_map[]  = {
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMAIA, "smaia"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SSAIA, "ssaia"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SPMP, "spmp"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMRNMI, "smrnmi"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SSNPM, "ssnpm"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMNPM, "smnpm"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMPM, "smpm"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_ZAWRS, "zawrs"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMCSRIND, "smcsrind"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SSCSRIND, "sscsrind"},
 };
 
 static AndesCsrConfigInfo csr_mvec_cfg_map[]  = {
@@ -1078,6 +1094,15 @@ void andes_csr_configs(CPURISCVState *env)
             sizeof(csr_mrvarch_cfg2_map) / sizeof(AndesCsrConfigInfo),
             &mrvarch2_init_val);
         env->andes_csr.csrno[CSR_MRVARCH_CFG2] = mrvarch2_init_val;
+    }
+
+    /* Update mrvarch_cfg3 */
+    if (rvarch3(env, CSR_MRVARCH_CFG3) == RISCV_EXCP_NONE) {
+        target_ulong mrvarch3_init_val = env->andes_csr.csrno[CSR_MRVARCH_CFG3];
+        andes_csr_from_config(csr_mrvarch_cfg3_map,
+            sizeof(csr_mrvarch_cfg3_map) / sizeof(AndesCsrConfigInfo),
+            &mrvarch3_init_val);
+        env->andes_csr.csrno[CSR_MRVARCH_CFG3] = mrvarch3_init_val;
     }
 
     /* Update mvev_cfg */
