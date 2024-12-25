@@ -982,14 +982,14 @@ static AndesCsrConfigInfo csr_mrvarch_cfg_map[] = {
     /* bits:[32] */
     {CONFIG_BOOL,   MASK_MRVARCH_CFG_ZVQMAC, "isa-zvqmac"},
     {CONFIG_BOOL,   MASK_MRVARCH_CFG_ZVLSSEG, "isa-zvlsseg"},
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG_MRVARCH_EXT3, "mrvarch_cfg_mrvarch_ext3"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG_MRVARCH_EXT3, "mrvarch-ext3"},
 #endif
 };
 
 static AndesCsrConfigInfo csr_mrvarch_cfg2_map[]  = {
     {CONFIG_BOOL,   MASK_MRVARCH_CFG2_ZVQMAC, "isa-zvqmac"},
     {CONFIG_BOOL,   MASK_MRVARCH_CFG2_ZVLSSEG, "isa-zvlsseg"},
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG2_MRVARCH_EXT3, "mrvarch_cfg_mrvarch_ext3"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG2_MRVARCH_EXT3, "mrvarch-ext3"},
 };
 
 static AndesCsrConfigInfo csr_mrvarch_cfg3_map[]  = {
