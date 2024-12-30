@@ -516,7 +516,7 @@ struct CPUArchState {
 
     /* Andes ACE debugger info  */
     uint32_t ace_acracm_reg_number;
-    uint32_t *ace_lib_for_gdb_len;
+    uint32_t ace_lib_for_gdb_len;
     char *ace_lib_for_gdb;
     void *ace_acr_info_list;
     unsigned char *ace_acr_value;

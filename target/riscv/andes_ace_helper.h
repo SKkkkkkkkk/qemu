@@ -18,7 +18,7 @@ typedef struct {
     char name[1024 - (sizeof(unsigned) * 3)];
 } AceAcrInfo;
 
-int32_t qemu_ace_load_lib_gdb(CPURISCVState *env, const char *so_name);
+int32_t qemu_ace_load_lib_gdb(CPURISCVState *env, const char *soname);
 int32_t qemu_ace_get_filename_for_gdb(unsigned char *, char *, CPUState *);
 
 /* data access */

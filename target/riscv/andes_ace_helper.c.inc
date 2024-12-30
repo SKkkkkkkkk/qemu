@@ -377,20 +377,16 @@ uint32_t qemu_get_cpu_priv(CPURISCVState *env)
 #endif
 }
 
-int32_t qemu_ace_load_lib_gdb(CPURISCVState *env, const char *so_name)
+int32_t qemu_ace_load_lib_gdb(CPURISCVState *env, const char *soname)
 {
     void *handle;
-    /*
-     * Check whether already load ACE debugger library,
-     * we don't support multi-ace and/or multi-ace-dbg
-     */
-    if (env->ace_lib_for_gdb != NULL) {
-        return 0;
-    }
+    uint32_t *len;
 
-    /* dlopen a shared object named 'so_name' */
-    handle = dlopen(so_name, RTLD_NOW | RTLD_LOCAL);
+    /* dlopen a shared object named 'soname' */
+    handle = dlopen(soname, RTLD_NOW | RTLD_LOCAL);
     if (handle == NULL) {
+        qemu_printf("Load ACE debugger library '%s' failed\n",
+                    soname);
         return -1;
     }
 
@@ -402,17 +398,17 @@ int32_t qemu_ace_load_lib_gdb(CPURISCVState *env, const char *so_name)
         return -1;
     }
 
-    env->ace_lib_for_gdb_len =
-        (unsigned *) dlsym(handle, "ace_lib_for_gdb_len");
-    if (env->ace_lib_for_gdb_len == NULL) {
+    len = (uint32_t *) dlsym(handle, "ace_lib_for_gdb_len");
+    if (len == NULL) {
         qemu_printf("Unable to load symbol ace_lib_for_gdb_len\n");
         dlclose(handle);
         return -1;
+    } else {
+        env->ace_lib_for_gdb_len = *len;
     }
 
     qemu_printf("Load ACE debugger library '%s' successfully\n",
-                so_name);
-    dlclose(handle);
+                soname);
 
     return 0;
 }
@@ -420,27 +416,26 @@ int32_t qemu_ace_load_lib_gdb(CPURISCVState *env, const char *so_name)
 int32_t qemu_ace_get_filename_for_gdb(unsigned char *platform,
                                       char *soname, CPUState *cs)
 {
-    RISCVCPU *cpu = RISCV_CPU(cs);
-    CPURISCVState *env = &cpu->env;
+    CPURISCVState *env = cpu_env(cs);
     int32_t ret = 0;
 
     if (env->ace_lib_for_gdb) {
         /* use size as filename to do fopen */
-        sprintf(soname, "%u", *env->ace_lib_for_gdb_len);
+        sprintf(soname, "%u", env->ace_lib_for_gdb_len);
 
-        FILE *fd = fopen(soname, "w");
-        if (fd == NULL) {
+        FILE *fp = fopen(soname, "wb");
+        if (!fp) {
             qemu_printf("Failed to create temporary file for ACE "
                         "debugger information\n");
             ret = -2;
         } else {
             if (fwrite(env->ace_lib_for_gdb, sizeof(char),
-                *env->ace_lib_for_gdb_len, fd) != *env->ace_lib_for_gdb_len) {
+                env->ace_lib_for_gdb_len, fp) != env->ace_lib_for_gdb_len) {
                 qemu_printf("Failed to write temporary file for ACE "
                         "debugger information\n");
                 ret = -3;
             }
-            fclose(fd);
+            fclose(fp);
         }
     } else {
         qemu_printf("You should assign ACE debugger library first\n");
