@@ -67,22 +67,22 @@ static const struct MemmapEntry {
 } andes_ae350_memmap[] = {
     [ANDES_AE350_DRAM]              = { 0x00000000,   0x80000000 },
     [ANDES_AE350_MROM]              = { 0x80000000,    0x8000000 },
-    [ANDES_AE350_SLAVEPORT0_ILM]    = { 0xa0000000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT0_DLM]    = { 0xa0200000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT1_ILM]    = { 0xa0400000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT1_DLM]    = { 0xa0600000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT2_ILM]    = { 0xa0800000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT2_DLM]    = { 0xa0a00000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT3_ILM]    = { 0xa0c00000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT3_DLM]    = { 0xa0e00000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT4_ILM]    = { 0xa1000000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT4_DLM]    = { 0xa1200000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT5_ILM]    = { 0xa1400000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT5_DLM]    = { 0xa1600000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT6_ILM]    = { 0xa1800000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT6_DLM]    = { 0xa1a00000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT7_ILM]    = { 0xa1c00000,     0x200000 },
-    [ANDES_AE350_SLAVEPORT7_DLM]    = { 0xa1e00000,     0x200000 },
+    [ANDES_AE350_SUBPORT0_ILM]    = { 0xa0000000,     0x200000 },
+    [ANDES_AE350_SUBPORT0_DLM]    = { 0xa0200000,     0x200000 },
+    [ANDES_AE350_SUBPORT1_ILM]    = { 0xa0400000,     0x200000 },
+    [ANDES_AE350_SUBPORT1_DLM]    = { 0xa0600000,     0x200000 },
+    [ANDES_AE350_SUBPORT2_ILM]    = { 0xa0800000,     0x200000 },
+    [ANDES_AE350_SUBPORT2_DLM]    = { 0xa0a00000,     0x200000 },
+    [ANDES_AE350_SUBPORT3_ILM]    = { 0xa0c00000,     0x200000 },
+    [ANDES_AE350_SUBPORT3_DLM]    = { 0xa0e00000,     0x200000 },
+    [ANDES_AE350_SUBPORT4_ILM]    = { 0xa1000000,     0x200000 },
+    [ANDES_AE350_SUBPORT4_DLM]    = { 0xa1200000,     0x200000 },
+    [ANDES_AE350_SUBPORT5_ILM]    = { 0xa1400000,     0x200000 },
+    [ANDES_AE350_SUBPORT5_DLM]    = { 0xa1600000,     0x200000 },
+    [ANDES_AE350_SUBPORT6_ILM]    = { 0xa1800000,     0x200000 },
+    [ANDES_AE350_SUBPORT6_DLM]    = { 0xa1a00000,     0x200000 },
+    [ANDES_AE350_SUBPORT7_ILM]    = { 0xa1c00000,     0x200000 },
+    [ANDES_AE350_SUBPORT7_DLM]    = { 0xa1e00000,     0x200000 },
     [ANDES_AE350_NOR]               = { 0x88000000,    0x4000000 },
     [ANDES_AE350_IMSIC_M]           = { 0xc4000000,     0x100000 },
     [ANDES_AE350_IMSIC_S]           = { 0xc4100000,     0x100000 },
@@ -1084,14 +1084,14 @@ static int andes_load_elf(MachineState *machine,
     return 0;
 }
 
-typedef struct Slaveport_status {
+typedef struct Subport_status {
     int hart_id;
     bool dlm;
-} Slaveport_status;
-static uint64_t slaveport_read(void *opaque, hwaddr addr, unsigned size)
+} Subport_status;
+static uint64_t subport_read(void *opaque, hwaddr addr, unsigned size)
 {
     uint64_t ret = 0;
-    Slaveport_status *s = (Slaveport_status *)opaque;
+    Subport_status *s = (Subport_status *)opaque;
     CPUState *cs = qemu_get_cpu(s->hart_id);
     if (!cs) {
         return ret;
@@ -1107,10 +1107,10 @@ static uint64_t slaveport_read(void *opaque, hwaddr addr, unsigned size)
     return ret;
 }
 
-static void slaveport_write(void *opaque, hwaddr addr, uint64_t value,
+static void subport_write(void *opaque, hwaddr addr, uint64_t value,
                             unsigned size)
 {
-    Slaveport_status *s = (Slaveport_status *)opaque;
+    Subport_status *s = (Subport_status *)opaque;
     CPUState *cs = qemu_get_cpu(s->hart_id);
     if (!cs) {
         return;
@@ -1125,9 +1125,9 @@ static void slaveport_write(void *opaque, hwaddr addr, uint64_t value,
     }
 }
 
-static const MemoryRegionOps slaveport_ops = {
-    .read = slaveport_read,
-    .write = slaveport_write,
+static const MemoryRegionOps subport_ops = {
+    .read = subport_read,
+    .write = subport_write,
     .endianness = DEVICE_LITTLE_ENDIAN,
     .valid = {
         .min_access_size = 1,
@@ -1141,24 +1141,24 @@ static const MemoryRegionOps slaveport_ops = {
     },
 };
 
-static void slaveport_create(int hart_id, bool dlm, hwaddr base, hwaddr size)
+static void subport_create(int hart_id, bool dlm, hwaddr base, hwaddr size)
 {
-    Slaveport_status *s = g_new(Slaveport_status, 1);
+    Subport_status *s = g_new(Subport_status, 1);
     s->hart_id = hart_id;
     s->dlm = dlm;
-    MemoryRegion *slaveport_mr = g_new(MemoryRegion, 1);
+    MemoryRegion *subport_mr = g_new(MemoryRegion, 1);
     MemoryRegion *system_memory = get_system_memory();
     char *name;
     if (dlm) {
-        name = g_strdup_printf("%s%d_%s", "riscv.andes.ae350.slaveport",
+        name = g_strdup_printf("%s%d_%s", "riscv.andes.ae350.subport",
                                hart_id, "dlm");
     } else {
-        name = g_strdup_printf("%s%d_%s", "riscv.andes.ae350.slaveport",
+        name = g_strdup_printf("%s%d_%s", "riscv.andes.ae350.subport",
                                hart_id, "ilm");
     }
-    memory_region_init_io(slaveport_mr, NULL, &slaveport_ops, s,
+    memory_region_init_io(subport_mr, NULL, &subport_ops, s,
                           name, size);
-    memory_region_add_subregion(system_memory, base, slaveport_mr);
+    memory_region_add_subregion(system_memory, base, subport_mr);
 }
 
 static void andes_ae350_machine_init(MachineState *machine)
@@ -1214,13 +1214,13 @@ static void andes_ae350_machine_init(MachineState *machine)
     memory_region_add_subregion(system_memory, memmap[ANDES_AE350_L2C].base,
                                 mask_l2c);
 
-    for (int i = 0 ; i < ANDES_LM_SLAVEPORTS_MAX; i++) {
+    for (int i = 0 ; i < ANDES_LM_SUBPORTS_MAX; i++) {
         struct MemmapEntry silm_map =
-            memmap[ANDES_AE350_SLAVEPORT0_ILM + i * 2];
+            memmap[ANDES_AE350_SUBPORT0_ILM + i * 2];
         struct MemmapEntry sdlm_map =
-             memmap[ANDES_AE350_SLAVEPORT0_ILM + i * 2 + 1];
-        slaveport_create(i, 0, silm_map.base, silm_map.size);
-        slaveport_create(i, 1, sdlm_map.base, sdlm_map.size);
+             memmap[ANDES_AE350_SUBPORT0_ILM + i * 2 + 1];
+        subport_create(i, 0, silm_map.base, silm_map.size);
+        subport_create(i, 1, sdlm_map.base, sdlm_map.size);
     }
 
     /* load/create device tree */

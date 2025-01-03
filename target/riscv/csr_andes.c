@@ -922,7 +922,7 @@ static AndesCsrConfigInfo csr_mmsc_cfg_map[] = {
     {CONFIG_BOOL,   MASK_MMSC_CFG_ACE, "isa-ace"}, /* spike uses aces? */
     {CONFIG_BOOL,   MASK_MMSC_CFG_VPLIC, "vectored-plic"},
     {CONFIG_BOOL,   MASK_MMSC_CFG_EV5PE, NULL}, /* always set */
-    {CONFIG_BOOL,   MASK_MMSC_CFG_LMSLVP, "slave-port"},
+    {CONFIG_BOOL,   MASK_MMSC_CFG_LMSLVP, "sub-port"},
     {CONFIG_BOOL,   MASK_MMSC_CFG_PMNDS, "pfm-nds"},
     {CONFIG_BOOL,   MASK_MMSC_CFG_CCTLCSR, "cctl"},
     {CONFIG_BOOL,   MASK_MMSC_CFG_EFHW, "isa-efhw"},
