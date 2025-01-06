@@ -619,9 +619,8 @@ static DeviceState *andes_ae350_create_aia(AndesAe350AIAType aia_type,
     hwaddr addr;
     unsigned long aplic_addr;
     uint32_t guest_bits;
-    DeviceState *aplic_s = NULL;
-    DeviceState *aplic_m = NULL;
-    DeviceState *aplic_t = NULL;
+    DeviceState *aplic_ms[ANDES_AE350_APLIC_M_DOMAINS];
+    DeviceState *aplic_ss[ANDES_AE350_APLIC_S_DOMAINS];
     bool msimode = aia_type == ANDES_AE350_AIA_TYPE_APLIC_IMSIC;
 
     if (msimode) {
@@ -648,43 +647,60 @@ static DeviceState *andes_ae350_create_aia(AndesAe350AIAType aia_type,
     }
 
     if (!kvm_enabled()) {
-        /* Per-socket M-level APLIC */
+        /*
+         * First M-level parent is NULL
+         * Second~N M-level parent is Root domain (Level 0 domain)
+         */
         for (i = 0; i < ANDES_AE350_APLIC_M_DOMAINS; i++) {
             aplic_addr = memmap[ANDES_AE350_APLIC].base +
                 ANDES_AE350_APLIC_M_BASE + (ANDES_AE350_APLIC_STRIDE * i);
-            aplic_t = riscv_aplic_create(aplic_addr,
+            aplic_ms[i] = riscv_aplic_create(aplic_addr,
                                          ANDES_AE350_APLIC_SIZE_PER_DOMAIN,
                                          (msimode) ? 0 : base_hartid,
                                          (msimode) ? 0 : hart_count,
                                          ANDES_AE350_IRQCHIP_NUM_SOURCES,
                                          ANDES_AE350_IRQCHIP_NUM_PRIO_BITS,
-                                         msimode, true, NULL);
-            if (i == 0) /* Root domain */
-                aplic_m = aplic_t;
+                                         msimode, true,
+                                         i == 0 ? NULL : aplic_ms[0]);
+#if ANDES_AE350_MSICFGADDR_HARDWIRE
+            if ( i == 0 ) { /* Only root domain */
+                RISCVAPLICState *aplic = RISCV_APLIC(aplic_ms[i]);
+                /* LBPPN should shift 12 bits (page) */
+                aplic->mmsicfgaddr = memmap[ANDES_AE350_IMSIC_M].base >> 12;
+                /* HBPPN should shift 12 bits (page) + 32 bits */
+                /* Doesn't set bit 31 to lock config */
+                aplic->mmsicfgaddrH = memmap[ANDES_AE350_IMSIC_M].base >> 44;
+                aplic->smsicfgaddr = memmap[ANDES_AE350_IMSIC_S].base >> 12;
+                /* Doesn't set bit 31 to lock config */
+                aplic->smsicfgaddrH = memmap[ANDES_AE350_IMSIC_S].base >> 44;
+            }
+#endif
         }
     }
 
     if (kvm_enabled() && ANDES_AE350_APLIC_S_DOMAINS == 0) {
         error_report("Supervisor mode for APLIC must be enabled "
-                    "in the KVM environment");
+                     "in the KVM environment");
         exit(1);
     }
-    /* Per-socket S-level APLIC */
     for (i = 0; i < ANDES_AE350_APLIC_S_DOMAINS; i++) {
         aplic_addr = memmap[ANDES_AE350_APLIC].base +
             ANDES_AE350_APLIC_S_BASE + (ANDES_AE350_APLIC_STRIDE * i);
-        aplic_t = riscv_aplic_create(aplic_addr,
+        /*
+         * First S-level parent is Root domain(Machine) (Level 0 domain)
+         * Second~N S-level parent is Machine child id 1~n (Level 1 domain)
+         */
+        aplic_ss[i] = riscv_aplic_create(aplic_addr,
                                      ANDES_AE350_APLIC_SIZE_PER_DOMAIN,
                                      (msimode) ? 0 : base_hartid,
                                      (msimode) ? 0 : hart_count,
                                      ANDES_AE350_IRQCHIP_NUM_SOURCES,
                                      ANDES_AE350_IRQCHIP_NUM_PRIO_BITS,
-                                     msimode, false, aplic_m);
-        if (i == 0) /* Only save first S-level domain */
-            aplic_s = aplic_t;
+                                     msimode, false,
+                                     aplic_ms[i]);
     }
 
-    return kvm_enabled() ? aplic_s : aplic_m;
+    return kvm_enabled() ? aplic_ss[0] : aplic_ms[0];
 }
 
 static char *andes_ae350_get_aia_guests(Object *obj, Error **errp)
