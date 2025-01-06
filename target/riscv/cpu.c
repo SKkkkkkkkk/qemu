@@ -123,6 +123,8 @@ const RISCVIsaExtData isa_edata_arr[] = {
     ISA_EXT_DATA_ENTRY(zihintntl, PRIV_VERSION_1_10_0, ext_zihintntl),
     ISA_EXT_DATA_ENTRY(zihintpause, PRIV_VERSION_1_10_0, ext_zihintpause),
     ISA_EXT_DATA_ENTRY(zihpm, PRIV_VERSION_1_12_0, ext_zihpm),
+    ISA_EXT_DATA_ENTRY(zilsd, PRIV_VERSION_1_12_0, ext_zilsd),
+    ISA_EXT_DATA_ENTRY(zilsd, PRIV_VERSION_1_12_0, ext_zclsd),
     ISA_EXT_DATA_ENTRY(zimop, PRIV_VERSION_1_13_0, ext_zimop),
     ISA_EXT_DATA_ENTRY(zmmul, PRIV_VERSION_1_12_0, ext_zmmul),
     ISA_EXT_DATA_ENTRY(za64rs, PRIV_VERSION_1_12_0, has_priv_1_12),
@@ -2255,10 +2257,14 @@ static void andes_csr_sync_cpu_ext(CPURISCVState *env, RISCVCPU *cpu)
                                     cpu->cfg.ext_zihintntl);
             mrvarch_cfg2 = set_field(mrvarch_cfg2, MASK_MRVARCH_CFG2_ZFA,
                                     cpu->cfg.ext_zfa);
+            mrvarch_cfg2 = set_field(mrvarch_cfg2, MASK_MRVARCH_CFG2_ZILSD,
+                                    cpu->cfg.ext_zilsd);
             mrvarch_cfg2 = set_field(mrvarch_cfg2, MASK_MRVARCH_CFG2_ZVFHMIN,
                                     cpu->cfg.ext_zvfhmin);
             mrvarch_cfg2 = set_field(mrvarch_cfg2, MASK_MRVARCH_CFG2_ZVFH,
                                     cpu->cfg.ext_zvfh);
+            mrvarch_cfg2 = set_field(mrvarch_cfg2, MASK_MRVARCH_CFG2_ZCLSD,
+                                    cpu->cfg.ext_zclsd);
             mrvarch_cfg2 = set_field(mrvarch_cfg2, MASK_MRVARCH_CFG2_ZVBB,
                                     cpu->cfg.ext_zvbb);
             mrvarch_cfg2 = set_field(mrvarch_cfg2, MASK_MRVARCH_CFG2_ZVBC,
@@ -2308,10 +2314,14 @@ static void andes_csr_sync_cpu_ext(CPURISCVState *env, RISCVCPU *cpu)
                                 cpu->cfg.ext_zihintntl);
         mrvarch_cfg = set_field(mrvarch_cfg, MASK_MRVARCH_CFG_ZFA,
                                 cpu->cfg.ext_zfa);
+        mrvarch_cfg = set_field(mrvarch_cfg, MASK_MRVARCH_CFG_ZILSD,
+                                cpu->cfg.ext_zilsd);
         mrvarch_cfg = set_field(mrvarch_cfg, MASK_MRVARCH_CFG_ZVFHMIN,
                                 cpu->cfg.ext_zvfhmin);
         mrvarch_cfg = set_field(mrvarch_cfg, MASK_MRVARCH_CFG_ZVFH,
                                 cpu->cfg.ext_zvfh);
+        mrvarch_cfg = set_field(mrvarch_cfg, MASK_MRVARCH_CFG_ZCLSD,
+                                cpu->cfg.ext_zclsd);
         mrvarch_cfg = set_field(mrvarch_cfg, MASK_MRVARCH_CFG_ZVBB,
                                 cpu->cfg.ext_zvbb);
         mrvarch_cfg = set_field(mrvarch_cfg, MASK_MRVARCH_CFG_ZVBC,
@@ -2971,6 +2981,8 @@ const RISCVCPUMultiExtConfig riscv_cpu_extensions[] = {
     MULTI_EXT_CFG_BOOL("zicsr", ext_zicsr, true),
     MULTI_EXT_CFG_BOOL("zihintntl", ext_zihintntl, true),
     MULTI_EXT_CFG_BOOL("zihintpause", ext_zihintpause, true),
+    MULTI_EXT_CFG_BOOL("zilsd", ext_zilsd, false),
+    MULTI_EXT_CFG_BOOL("zclsd", ext_zclsd, false),
     MULTI_EXT_CFG_BOOL("zimop", ext_zimop, false),
     MULTI_EXT_CFG_BOOL("zcmop", ext_zcmop, false),
     MULTI_EXT_CFG_BOOL("zacas", ext_zacas, false),

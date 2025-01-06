@@ -1762,13 +1762,14 @@ static target_ulong riscv_transformed_insn(CPURISCVState *env,
                 access_size = 4;
                 break;
             case OPC_RISC_C_FUNC_FLW_LD:
-                if (riscv_cpu_xlen(env) == 32) { /* C.FLW (RV32) */
+                if (riscv_cpu_xlen(env) == 32 &&
+                    !env_archcpu(env)->cfg.ext_zclsd) { /* C.FLW (RV32) */
                     xinsn = OPC_RISC_FLW;
                     xinsn = SET_RD(xinsn, GET_C_RS2S(insn));
                     access_rs1 = GET_C_RS1S(insn);
                     access_imm = GET_C_LW_IMM(insn);
                     access_size = 4;
-                } else { /* C.LD (RV64/RV128) */
+                } else { /* C.LD (RV64/RV128) and C.LD/C.LDSP (RV32 Zclsd)*/
                     xinsn = OPC_RISC_LD;
                     xinsn = SET_RD(xinsn, GET_C_RS2S(insn));
                     access_rs1 = GET_C_RS1S(insn);
@@ -1793,13 +1794,14 @@ static target_ulong riscv_transformed_insn(CPURISCVState *env,
                 access_size = 4;
                 break;
             case OPC_RISC_C_FUNC_FSW_SD:
-                if (riscv_cpu_xlen(env) == 32) { /* C.FSW (RV32) */
+                if (riscv_cpu_xlen(env) == 32 &&
+                    !env_archcpu(env)->cfg.ext_zclsd) { /* C.FLW (RV32) */
                     xinsn = OPC_RISC_FSW;
                     xinsn = SET_RS2(xinsn, GET_C_RS2S(insn));
                     access_rs1 = GET_C_RS1S(insn);
                     access_imm = GET_C_SW_IMM(insn);
                     access_size = 4;
-                } else { /* C.SD (RV64/RV128) */
+                } else { /* C.SD (RV64/RV128) and C.SD/C.SDSP (RV32 Zclsd) */
                     xinsn = OPC_RISC_SD;
                     xinsn = SET_RS2(xinsn, GET_C_RS2S(insn));
                     access_rs1 = GET_C_RS1S(insn);

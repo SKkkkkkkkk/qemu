@@ -602,6 +602,23 @@ void riscv_cpu_validate_set_extensions(RISCVCPU *cpu, Error **errp)
         return;
     }
 
+    if (mcc->misa_mxl_max != MXL_RV32 &&
+        (cpu->cfg.ext_zilsd || cpu->cfg.ext_zclsd)) {
+        error_setg(errp, "Zilsd/Zclsd extensions are only relevant to RV32");
+        return;
+    }
+
+    if (!cpu->cfg.ext_zilsd && cpu->cfg.ext_zclsd) {
+        error_setg(errp, "Zclsd extension requires Zilsd extension");
+        return;
+    }
+
+    if (cpu->cfg.ext_zcf && cpu->cfg.ext_zclsd) {
+        error_setg(errp, "Zclsd extensions are incompatible with "
+                         "Zcf extension");
+        return;
+    }
+
     if (mcc->misa_mxl_max != MXL_RV32 && cpu->cfg.ext_zcf) {
         error_setg(errp, "Zcf extension is only relevant to RV32");
         return;
@@ -618,8 +635,9 @@ void riscv_cpu_validate_set_extensions(RISCVCPU *cpu, Error **errp)
     }
 
     if ((cpu->cfg.ext_zcf || cpu->cfg.ext_zcd || cpu->cfg.ext_zcb ||
-         cpu->cfg.ext_zcmp || cpu->cfg.ext_zcmt) && !cpu->cfg.ext_zca) {
-        error_setg(errp, "Zcf/Zcd/Zcb/Zcmp/Zcmt extensions require Zca "
+         cpu->cfg.ext_zcmp || cpu->cfg.ext_zcmt || cpu->cfg.ext_zclsd) &&
+         !cpu->cfg.ext_zca) {
+        error_setg(errp, "Zcf/Zcd/Zcb/Zcmp/Zcmt/Zclsd extensions require Zca "
                          "extension");
         return;
     }
