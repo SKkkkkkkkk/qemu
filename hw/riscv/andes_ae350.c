@@ -122,8 +122,8 @@ static const struct MemmapEntry {
 /* KVM AIA only supports APLIC MSI. APLIC Wired is always emulated by QEMU. */
 static bool andes_ae350_use_kvm_aia(AndesAe350BoardState *s)
 {
-    return kvm_irqchip_in_kernel() && s->aia_type ==
-        ANDES_AE350_AIA_TYPE_APLIC_IMSIC;
+    return kvm_irqchip_in_kernel() &&
+           s->aia_type == ANDES_AE350_AIA_TYPE_APLIC_IMSIC;
 }
 
 static void create_fdt_iopmp(AndesAe350BoardState *bs,
