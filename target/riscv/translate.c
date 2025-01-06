@@ -38,7 +38,8 @@
 #include "tcg/tcg-cpu.h"
 
 /* global register indices */
-static TCGv cpu_gpr[32], cpu_gprh[32], cpu_pc, cpu_vl, cpu_vstart;
+static TCGv cpu_gpr[32], cpu_gprh[32], cpu_pc, cpu_vl, cpu_vstart,
+            andes_umisc_ctl;
 static TCGv_i64 cpu_fpr[32]; /* assume F and D extensions */
 static TCGv load_res;
 static TCGv load_val;
@@ -192,13 +193,30 @@ static void gen_nanbox_h(TCGv_i64 out, TCGv_i64 in)
  * input value is treated as an n-bit canonical NaN (v2.2 section 9.2).
  *
  * Here, the result is always nan-boxed, even the canonical nan.
+ *
+ * Also support Andes FP_MODE bit.
  */
 static void gen_check_nanbox_h(TCGv_i64 out, TCGv_i64 in)
 {
     TCGv_i64 t_max = tcg_constant_i64(0xffffffffffff0000ull);
     TCGv_i64 t_nan = tcg_constant_i64(0xffffffffffff7e00ull);
+    TCGv_i64 t_nan_bf16 = tcg_constant_i64(0xffffffffffff7fc0ull);
+    TCGv temp = tcg_temp_new();
+    TCGLabel *bf16_mode = gen_new_label();
+    TCGLabel *finish = gen_new_label();
 
+    tcg_gen_andi_tl(temp, andes_umisc_ctl, MASK_UMISC_CTL_FP_MODE);
+    tcg_gen_brcondi_tl(TCG_COND_EQ, temp, V5_UMISC_CTL_FP_MODE_BF16, bf16_mode);
+
+    /* if (FP_MODE == 0) */
     tcg_gen_movcond_i64(TCG_COND_GEU, out, in, t_max, in, t_nan);
+    tcg_gen_br(finish);
+
+    /* if (FP_MODE == 1) */
+    gen_set_label(bf16_mode);
+    tcg_gen_movcond_i64(TCG_COND_GEU, out, in, t_max, in, t_nan_bf16);
+
+    gen_set_label(finish);
 }
 
 static void gen_check_nanbox_s(TCGv_i64 out, TCGv_i64 in)
@@ -1438,4 +1456,7 @@ void riscv_translate_init(void)
                              "load_res");
     load_val = tcg_global_mem_new(tcg_env, offsetof(CPURISCVState, load_val),
                              "load_val");
+    andes_umisc_ctl = tcg_global_mem_new(tcg_env,
+                        offsetof(CPURISCVState, andes_csr.csrno[CSR_UMISC_CTL]),
+                        "umisc_ctl");
 }
