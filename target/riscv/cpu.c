@@ -1047,6 +1047,11 @@ static void rv64_andes_ax46mp_cpu_init(Object *obj)
     cfg->ext_zfbfmin = true;
     cfg->ext_zvfbfmin = true;
     cfg->ext_zvfbfwma = true;
+    cfg->ext_zca = true;
+    cfg->ext_zcf = true;
+    cfg->ext_zcd = true;
+    cfg->ext_zcmp = true;
+    cfg->ext_zcmt = true;
 
     /* CSR_MMSC_CFG = 0x2000236005f03d */
     env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
@@ -1089,6 +1094,11 @@ static void rv64_andes_ax46mpv_cpu_init(Object *obj)
     cfg->ext_zfbfmin = true;
     cfg->ext_zvfbfmin = true;
     cfg->ext_zvfbfwma = true;
+    cfg->ext_zca = true;
+    cfg->ext_zcf = true;
+    cfg->ext_zcd = true;
+    cfg->ext_zcmp = true;
+    cfg->ext_zcmt = true;
 
     /* Vector */
     env->vext_ver = VEXT_VERSION_1_00_0;
@@ -1619,6 +1629,13 @@ static void rv32_andes_a46mp_cpu_init(Object *obj)
     cfg->ext_zfbfmin = true;
     cfg->ext_zvfbfmin = true;
     cfg->ext_zvfbfwma = true;
+    cfg->ext_zca = true;
+    cfg->ext_zcf = true;
+    cfg->ext_zcd = true;
+    cfg->ext_zcmp = true;
+    cfg->ext_zcmt = true;
+    cfg->ext_zilsd = true;
+    cfg->ext_zclsd = true;
 
     /* CSR_MMSC_CFG = 0xe005f039 */
     env->andes_csr.csrno[CSR_MMSC_CFG] = BIT(V5_MMSC_CFG_ECC) |
@@ -1657,6 +1674,13 @@ static void rv32_andes_a46mpv_cpu_init(Object *obj)
     cfg->ext_zfbfmin = true;
     cfg->ext_zvfbfmin = true;
     cfg->ext_zvfbfwma = true;
+    cfg->ext_zca = true;
+    cfg->ext_zcf = true;
+    cfg->ext_zcd = true;
+    cfg->ext_zcmp = true;
+    cfg->ext_zcmt = true;
+    cfg->ext_zilsd = true;
+    cfg->ext_zclsd = true;
 
     /* Vector */
     env->vext_ver = VEXT_VERSION_1_00_0;
