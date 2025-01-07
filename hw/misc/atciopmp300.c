@@ -29,14 +29,13 @@
 #include "hw/irq.h"
 #include "hw/registerfields.h"
 #include "trace.h"
+#include "qemu/main-loop.h"
 
 #define TYPE_IOPMP_IOMMU_MEMORY_REGION "iopmp-iommu-memory-region"
 #define TYPE_IOPMP_TRANSACTION_INFO_SINK "iopmp_transaction_info_sink"
 
 DECLARE_INSTANCE_CHECKER(Iopmp_StreamSink, IOPMP_TRANSACTION_INFO_SINK,
                          TYPE_IOPMP_TRANSACTION_INFO_SINK)
-
-#define MEMTX_IOPMP_STALL (1 << 3)
 
 REG32(VERSION, 0x00)
     FIELD(VERSION, VENDOR, 0, 24)
@@ -70,16 +69,9 @@ REG32(ERRREACT, 0x18)
 REG32(MDSTALL, 0x20)
     FIELD(MDSTALL, EXEMPT, 0, 1)
     FIELD(MDSTALL, MD, 1, 31)
-REG32(MDSTALLH, 0x24)
-    FIELD(MDSTALLH, MD, 0, 32)
-REG32(SIDSCP, 0x28)
-    FIELD(SIDSCP, SID, 0, 16)
-    FIELD(SIDSCP, OP, 30, 2)
 REG32(MDLCK, 0x40)
     FIELD(MDLCK, L, 0, 1)
     FIELD(MDLCK, MD, 1, 31)
-REG32(MDLCKH, 0x44)
-    FIELD(MDLCKH, MDH, 0, 32)
 REG32(MDCFGLCK, 0x48)
     FIELD(MDCFGLCK, L, 0, 1)
     FIELD(MDCFGLCK, F, 1, 7)
@@ -102,16 +94,6 @@ REG32(MDCFG0, 0x800)
 REG32(SRCMD_EN0, 0x1000)
     FIELD(SRCMD_EN0, L, 0, 1)
     FIELD(SRCMD_EN0, MD, 1, 31)
-REG32(SRCMD_ENH0, 0x1004)
-    FIELD(SRCMD_ENH0, MDH, 0, 32)
-REG32(SRCMD_R0, 0x1008)
-    FIELD(SRCMD_R0, MD, 1, 31)
-REG32(SRCMD_RH0, 0x100C)
-    FIELD(SRCMD_RH0, MDH, 0, 32)
-REG32(SRCMD_W0, 0x1010)
-    FIELD(SRCMD_W0, MD, 1, 31)
-REG32(SRCMD_WH0, 0x1014)
-    FIELD(SRCMD_WH0, MDH, 0, 32)
 REG32(ENTRY_ADDR0, 0x2000)
     FIELD(ENTRY_ADDR0, ADDR, 0, 32)
 REG32(ENTRY_ADDRH0, 0x2004)
@@ -126,17 +108,53 @@ REG32(ENTRY_USER_CFG0, 0x200C)
 
 /* Offsets to SRCMD_EN(i) */
 #define SRCMD_EN_OFFSET  0x0
-#define SRCMD_ENH_OFFSET 0x4
-#define SRCMD_R_OFFSET   0x8
-#define SRCMD_RH_OFFSET  0xC
-#define SRCMD_W_OFFSET   0x10
-#define SRCMD_WH_OFFSET  0x14
 
 /* Offsets to ENTRY_ADDR(i) */
 #define ENTRY_ADDR_OFFSET     0x0
 #define ENTRY_ADDRH_OFFSET    0x4
 #define ENTRY_CFG_OFFSET      0x8
-#define ENTRY_USER_CFG_OFFSET 0xC
+
+/*
+ * Configurations for a45_fxc7k410t_c102_ae350_c1_bigorca_60Mhz_20240618.2000
+ * and AndeShape ATCIOPMP300 Data Sheet Rev.1.0
+ */
+#define IOPMP_MD_NUM                   8
+#define IOPMP_SID_NUM                  16
+#define CFG_IOPMP_MODEL_K              6
+#define IOPMP_ENTRY_NUM                (IOPMP_MD_NUM * CFG_IOPMP_MODEL_K)
+#define CFG_TOR_EN                     1
+#define CFG_SPS_EN                     0
+#define CFG_USER_CFG_EN                0
+#define CFG_PROG_PRIENT                0
+#define CFG_PRIO_ENTRY                 IOPMP_ENTRY_NUM
+
+#define VENDER_ANDES                   0
+#define SPECVER_1_0_0_DRAFT3           0
+
+#define IMPID_ATCIOPMP300              0x00303000
+
+#define RRE_BUS_ERROR                  0
+#define RRE_DECODE_ERROR               1
+#define RRE_SUCCESS_ZEROS              2
+#define RRE_SUCCESS_ONES               3
+
+#define RWE_BUS_ERROR                  0
+#define RWE_DECODE_ERROR               1
+#define RWE_SUCCESS                    2
+
+#define ERR_REQINFO_TYPE_READ          0
+#define ERR_REQINFO_TYPE_WRITE         1
+#define ERR_REQINFO_TYPE_USER          3
+
+#define IOPMP_MODEL_FULL               0
+#define IOPMP_MODEL_RAPIDK             0x1
+#define IOPMP_MODEL_DYNAMICK           0x2
+#define IOPMP_MODEL_ISOLATION          0x3
+#define IOPMP_MODEL_COMPACTK           0x4
+
+#define ENTRY_NO_HIT                   0
+#define ENTRY_PAR_HIT                  1
+#define ENTRY_HIT                      2
 
 static void iopmp_iommu_notify(Atciopmp300state *s)
 {
@@ -237,7 +255,7 @@ static void iopmp_update_rule(Atciopmp300state *s, uint32_t entry_index)
 
 static void update_md_stall_state(Atciopmp300state *s)
 {
-    uint64_t mdstall = s->regs.mdstall | (uint64_t)s->regs.mdstallh << 32;
+    uint64_t mdstall = s->regs.mdstall;
 
     if (FIELD_EX32(s->regs.mdstall, MDSTALL, EXEMPT)) {
         s->md_stall_stat = mdstall ^ (~0ULL);
@@ -250,14 +268,13 @@ static void update_md_stall_state(Atciopmp300state *s)
 
 static void update_sid_stall(Atciopmp300state *s)
 {
-    uint64_t srcmd_en;
+    uint32_t srcmd_en;
 
     update_md_stall_state(s);
     s->is_stalled = 0;
     for (int i = 0; i < s->sid_num; i++) {
         s->sid_stall[i] = 0;
-        srcmd_en = ((uint64_t)s->regs.srcmd_en[i] |
-                    ((uint64_t)s->regs.srcmd_enh[i] << 32)) >> 1;
+        srcmd_en = s->regs.srcmd_en[i] >> 1;
         for (int j = 0; j < s->md_num; j++) {
             if (((srcmd_en >> j) & 0x1) && ((s->md_stall_stat >> j) & 0x1)) {
                 s->sid_stall[i] = 1;
@@ -265,6 +282,7 @@ static void update_sid_stall(Atciopmp300state *s)
             }
         }
     }
+    iopmp_iommu_notify(s);
 }
 
 static inline IOMMUAccessFlags entry_cfg_iommu_access_flags(uint32_t cfg)
@@ -295,12 +313,12 @@ static MemTxResult atciopmp300_read(void *opaque, hwaddr addr, uint64_t *data,
              s->enable << R_HWCFG0_ENABLE_SHIFT;
         break;
     case A_HWCFG1:
-        rz = s->model << R_HWCFG1_MODEL_SHIFT |
+        rz = IOPMP_MODEL_RAPIDK << R_HWCFG1_MODEL_SHIFT |
              CFG_TOR_EN << R_HWCFG1_TOR_EN_SHIFT |
-             s->sps_en << R_HWCFG1_SPS_EN_SHIFT |
+             CFG_SPS_EN << R_HWCFG1_SPS_EN_SHIFT |
              CFG_USER_CFG_EN << R_HWCFG1_USER_CFG_EN_SHIFT  |
-             s->prog_prient << R_HWCFG1_PROG_PRIENT_SHIFT |
-             s->prio_entry << R_HWCFG1_PRIO_ENTRY_SHIFT;
+             CFG_PROG_PRIENT << R_HWCFG1_PROG_PRIENT_SHIFT |
+             s->entry_num << R_HWCFG1_PRIO_ENTRY_SHIFT;
         break;
     case A_ENTRYOFFSET:
         rz = A_ENTRY_ADDR0;
@@ -312,20 +330,8 @@ static MemTxResult atciopmp300_read(void *opaque, hwaddr addr, uint64_t *data,
         rz = FIELD_EX32(s->regs.mdstall, MDSTALL, MD);
         rz |= s->is_stalled;
         break;
-    case A_MDSTALLH:
-        rz = s->regs.mdstallh;
-        break;
-    case A_SIDSCP:
-        rz = s->regs.sidscp;
-        break;
     case A_MDLCK:
         rz = s->regs.mdlck;
-        break;
-    case A_MDLCKH:
-        if (s->md_num < 31) {
-            tx_result = MEMTX_ERROR;
-        }
-        rz = s->regs.mdlckh;
         break;
     case A_MDCFGLCK:
         rz = s->regs.mdcfglck;
@@ -348,7 +354,7 @@ static MemTxResult atciopmp300_read(void *opaque, hwaddr addr, uint64_t *data,
 
     default:
         if (addr >= A_MDCFG0 &&
-            addr < A_MDCFG0 + 4 * (s->md_num - 1)) {
+            addr <= A_MDCFG0 + 4 * (s->md_num - 1)) {
             offset = addr - A_MDCFG0;
             idx = offset >> 2;
             if (idx == 0 && offset == 0) {
@@ -360,7 +366,7 @@ static MemTxResult atciopmp300_read(void *opaque, hwaddr addr, uint64_t *data,
                               __func__, (int)addr);
             }
         } else if (addr >= A_SRCMD_EN0 &&
-                   addr < A_SRCMD_WH0 + 32 * (s->sid_num - 1)) {
+                   addr < A_SRCMD_EN0 + 32 * s->sid_num) {
             offset = addr - A_SRCMD_EN0;
             idx = offset >> 5;
             offset &= 0x1f;
@@ -369,43 +375,14 @@ static MemTxResult atciopmp300_read(void *opaque, hwaddr addr, uint64_t *data,
             case SRCMD_EN_OFFSET:
                 rz = s->regs.srcmd_en[idx];
                 break;
-            case SRCMD_ENH_OFFSET:
-                if (s->md_num < 31) {
-                    tx_result = MEMTX_ERROR;
-                }
-                rz = s->regs.srcmd_enh[idx];
-                break;
-            case SRCMD_R_OFFSET:
-                if (!s->sps_en) {
-                    tx_result = MEMTX_ERROR;
-                }
-                rz = s->regs.srcmd_r[idx];
-                break;
-            case SRCMD_RH_OFFSET:
-                if (!s->sps_en || s->md_num < 31) {
-                    tx_result = MEMTX_ERROR;
-                }
-                rz = s->regs.srcmd_rh[idx];
-                break;
-            case SRCMD_W_OFFSET:
-                if (!s->sps_en) {
-                    tx_result = MEMTX_ERROR;
-                }
-                rz = s->regs.srcmd_w[idx];
-                break;
-            case SRCMD_WH_OFFSET:
-                if (!s->sps_en || s->md_num < 31) {
-                    tx_result = MEMTX_ERROR;
-                }
-                rz = s->regs.srcmd_wh[idx];
-                break;
             default:
                 tx_result = MEMTX_ERROR;
                 qemu_log_mask(LOG_GUEST_ERROR, "%s: Bad addr %x\n",
                               __func__, (int)addr);
+                break;
             }
         } else if (addr >= A_ENTRY_ADDR0 &&
-                   addr < A_ENTRY_USER_CFG0 + 16 * (s->entry_num - 1)) {
+                   addr <  A_ENTRY_ADDR0 + 16 * s->entry_num) {
             offset = addr - A_ENTRY_ADDR0;
             idx = offset >> 4;
             offset &= 0xf;
@@ -419,13 +396,6 @@ static MemTxResult atciopmp300_read(void *opaque, hwaddr addr, uint64_t *data,
                 break;
             case ENTRY_CFG_OFFSET:
                 rz = s->regs.entry[idx].cfg_reg;
-                break;
-            case ENTRY_USER_CFG_OFFSET:
-                /* Does not support user customized permission */
-                if (!CFG_USER_CFG_EN) {
-                    tx_result = MEMTX_ERROR;
-                }
-                rz = 0;
                 break;
             default:
                 tx_result = MEMTX_ERROR;
@@ -449,7 +419,7 @@ static MemTxResult atciopmp300_write(void *opaque, hwaddr addr, uint64_t value,
                                      unsigned size, MemTxAttrs attrs)
 {
     Atciopmp300state *s = ATCIOPMP300(opaque);
-    uint32_t sid, op, offset, idx;
+    uint32_t offset, idx;
     uint32_t value32 = value;
     MemTxResult tx_result = MEMTX_OK;
 
@@ -467,13 +437,6 @@ static MemTxResult atciopmp300_write(void *opaque, hwaddr addr, uint64_t value,
         }
         break;
     case A_HWCFG1:
-        if (s->prog_prient) {
-            s->prio_entry = FIELD_EX32(value32, HWCFG1, PRIO_ENTRY);
-        }
-        if (!FIELD_EX32(value32, HWCFG1, PROG_PRIENT)) {
-            /* W0 */
-            s->prog_prient = 0;
-        }
         break;
     case A_ERRREACT:
         if (!FIELD_EX32(s->regs.errreact, ERRREACT, L)) {
@@ -504,41 +467,11 @@ static MemTxResult atciopmp300_write(void *opaque, hwaddr addr, uint64_t value,
         /* sid_stall should be captured only when MDSTALL is written */
         update_sid_stall(s);
         break;
-    case A_MDSTALLH:
-        s->regs.mdstallh = value32;
-        break;
-    case A_SIDSCP:
-        sid = FIELD_EX32(value32, SIDSCP, SID);
-        op = FIELD_EX32(value32, SIDSCP, OP);
-        if (sid < s->sid_num) {
-            switch (op) {
-            case SIDSCP_OP_QUERY:
-                s->regs.sidscp = sid |
-                                 ((2 - s->sid_stall[sid]) << R_SIDSCP_OP_SHIFT);
-                break;
-            case SIDSCP_OP_STALL:
-                s->sid_stall[sid] = true;
-                break;
-            case SIDSCP_OP_NOTSTALL:
-                s->sid_stall[sid] = false;
-                break;
-            default:
-                break;
-            }
-        } else {
-            s->regs.sidscp = sid | (0x3 << R_SIDSCP_OP_SHIFT);
-        }
-        break;
     case A_MDLCK:
         if (!FIELD_EX32(s->regs.mdlck, MDLCK, L)) {
             s->regs.mdlck = value32;
-        }
-        break;
-    case A_MDLCKH:
-        if (s->md_num < 31) {
-            tx_result = MEMTX_ERROR;
-        } else if (!FIELD_EX32(s->regs.mdlck, MDLCK, L)) {
-            s->regs.mdlckh = value32;
+            /* Mask out bits exceeding (md_num + lock) */
+            s->regs.mdlck = extract32(s->regs.mdlck, 0, s->md_num + 1);
         }
         break;
     case A_MDCFGLCK:
@@ -567,7 +500,7 @@ static MemTxResult atciopmp300_write(void *opaque, hwaddr addr, uint64_t value,
 
     default:
         if (addr >= A_MDCFG0 &&
-            addr < A_MDCFG0 + 4 * (s->md_num - 1)) {
+            addr <= A_MDCFG0 + 4 * (s->md_num - 1)) {
             offset = addr - A_MDCFG0;
             idx = offset >> 2;
             /* RO in rapid-k model */
@@ -576,7 +509,7 @@ static MemTxResult atciopmp300_write(void *opaque, hwaddr addr, uint64_t value,
                               __func__, (int)addr);
             }
         } else if (addr >= A_SRCMD_EN0 &&
-                   addr < A_SRCMD_WH0 + 32 * (s->sid_num - 1)) {
+                   addr < A_SRCMD_EN0 + 32 * s->sid_num) {
             offset = addr - A_SRCMD_EN0;
             idx = offset >> 5;
             offset &= 0x1f;
@@ -598,67 +531,17 @@ static MemTxResult atciopmp300_write(void *opaque, hwaddr addr, uint64_t value,
                     s->regs.srcmd_en[idx] =
                         FIELD_DP32(s->regs.srcmd_en[idx], SRCMD_EN0, MD,
                                    FIELD_EX32(value32, SRCMD_EN0, MD));
+                    /* Mask out bits exceeding (md_num + lock) */
+                    s->regs.srcmd_en[idx] = extract32(s->regs.srcmd_en[idx], 0,
+                                                      s->md_num + 1);
                     break;
-                case SRCMD_ENH_OFFSET:
-                    if (s->md_num < 31) {
-                        tx_result = MEMTX_ERROR;
-                    } else {
-                        value32 = (value32 & ~s->regs.mdlckh) |
-                                  (s->regs.srcmd_enh[idx] & s->regs.mdlckh);
-                        s->regs.srcmd_enh[idx] =
-                            FIELD_DP32(s->regs.srcmd_enh[idx], SRCMD_ENH0, MDH,
-                                       value32);
-                    }
-                    break;
-                case SRCMD_R_OFFSET:
-                    if (s->sps_en) {
-                        value32 = (value32 & ~s->regs.mdlck) |
-                                  (s->regs.srcmd_r[idx] & s->regs.mdlck);
-                        s->regs.srcmd_r[idx] =
-                            FIELD_DP32(s->regs.srcmd_r[idx], SRCMD_R0, MD,
-                                       FIELD_EX32(value32, SRCMD_R0, MD));
-                    } else {
-                        tx_result = MEMTX_ERROR;
-                    }
-                    break;
-                case SRCMD_RH_OFFSET:
-                    if (s->sps_en && s->md_num >= 31) {
-                        value32 = (value32 & ~s->regs.mdlckh) |
-                                  (s->regs.srcmd_rh[idx] & s->regs.mdlckh);
-                        s->regs.srcmd_rh[idx] =
-                            FIELD_DP32(s->regs.srcmd_rh[idx], SRCMD_RH0,
-                                       MDH, value32);
-                    } else {
-                        tx_result = MEMTX_ERROR;
-                    }
-                    break;
-                case SRCMD_W_OFFSET:
-                    if (s->sps_en) {
-                        value32 = (value32 & ~s->regs.mdlck) |
-                                  (s->regs.srcmd_w[idx] & s->regs.mdlck);
-                        s->regs.srcmd_w[idx] =
-                            FIELD_DP32(s->regs.srcmd_w[idx], SRCMD_W0, MD,
-                                       FIELD_EX32(value32, SRCMD_W0, MD));
-                    } else {
-                        tx_result = MEMTX_ERROR;
-                    }
-                    break;
-                case SRCMD_WH_OFFSET:
-                    if (s->sps_en && s->md_num >= 31) {
-                        value32 = (value32 & ~s->regs.mdlckh) |
-                                  (s->regs.srcmd_wh[idx] & s->regs.mdlckh);
-                        s->regs.srcmd_wh[idx] =
-                            FIELD_DP32(s->regs.srcmd_wh[idx], SRCMD_WH0,
-                                       MDH, value32);
-                    } else {
-                        tx_result = MEMTX_ERROR;
-                    }
                 default:
+                    tx_result = MEMTX_ERROR;
                     break;
                 }
             }
         } else if (addr >= A_ENTRY_ADDR0 &&
-                   addr < A_ENTRY_USER_CFG0 + 16 * (s->entry_num - 1)) {
+                   addr < A_ENTRY_ADDR0 + 16 * s->entry_num) {
             offset = addr - A_ENTRY_ADDR0;
             idx = offset >> 4;
             offset &= 0xf;
@@ -674,12 +557,6 @@ static MemTxResult atciopmp300_write(void *opaque, hwaddr addr, uint64_t value,
                     break;
                 case ENTRY_CFG_OFFSET:
                     s->regs.entry[idx].cfg_reg = value32;
-                    break;
-                case ENTRY_USER_CFG_OFFSET:
-                    /* Does not support user customized permission */
-                    if (!CFG_USER_CFG_EN) {
-                        tx_result = MEMTX_ERROR;
-                    }
                     break;
                 default:
                     tx_result = MEMTX_ERROR;
@@ -699,6 +576,7 @@ static MemTxResult atciopmp300_write(void *opaque, hwaddr addr, uint64_t value,
             qemu_log_mask(LOG_GUEST_ERROR, "%s: Bad addr %x\n", __func__,
                           (int)addr);
         }
+        break;
     }
     return tx_result;
 }
@@ -712,7 +590,7 @@ static int match_entry_md(Atciopmp300state *s, int md_idx, hwaddr start_addr,
     int result = ENTRY_NO_HIT;
     int i = 0;
     hwaddr tlb_sa = start_addr & ~(TARGET_PAGE_SIZE - 1);
-    hwaddr tlb_ea = tlb_sa + TARGET_PAGE_SIZE - 1;
+    hwaddr tlb_ea = (end_addr & ~(TARGET_PAGE_SIZE - 1)) + TARGET_PAGE_SIZE - 1;
     entry_idx_s = md_idx * s->regs.mdcfg[0];
     entry_idx_e = (md_idx + 1) * s->regs.mdcfg[0];
 
@@ -783,11 +661,10 @@ static int match_entry(Atciopmp300state *s, int sid, hwaddr start_addr,
     int cur_result = ENTRY_NO_HIT;
     int result = ENTRY_NO_HIT;
     /* Remove lock bit */
-    uint64_t srcmd_en = ((uint64_t)s->regs.srcmd_en[sid] |
-                         ((uint64_t)s->regs.srcmd_enh[sid] << 32)) >> 1;
+    uint32_t srcmd_en = s->regs.srcmd_en[sid] >> 1;
 
     for (int md_idx = 0; md_idx < s->md_num; md_idx++) {
-        if (srcmd_en & (1ULL << md_idx)) {
+        if (srcmd_en & (1 << md_idx)) {
             cur_result = match_entry_md(s, md_idx, start_addr, end_addr,
                                         match_entry_idx, prior_entry_in_tlb);
             if (cur_result == ENTRY_HIT || cur_result == ENTRY_PAR_HIT) {
@@ -832,16 +709,15 @@ static void iopmp_error_reaction(Atciopmp300state *s, uint32_t id, hwaddr start,
 static IOMMUTLBEntry iopmp_translate(IOMMUMemoryRegion *iommu, hwaddr addr,
                                      IOMMUAccessFlags flags, int iommu_idx)
 {
-    int pci_id = 0;
     int sid = iommu_idx;
     Atciopmp300state *s;
-    MemoryRegion *mr = MEMORY_REGION(iommu);
     hwaddr start_addr, end_addr;
     int entry_idx = -1;
     int md_idx = -1;
-    int result, srcmd_rw;
+    int result;
     int prior_entry_in_tlb = 0;
     iopmp_permission iopmp_perm;
+    bool lock = false;
 
     IOMMUTLBEntry entry = {
         .target_as = NULL,
@@ -852,19 +728,8 @@ static IOMMUTLBEntry iopmp_translate(IOMMUMemoryRegion *iommu, hwaddr addr,
     };
 
     /* Find IOPMP of iommu */
-    if (strncmp(mr->name, "atciopmp300-sysbus-iommu", 24) != 0) {
-        sscanf(mr->name, "atciopmp300-pci-iommu%d", &pci_id);
-        iopmp_pci_addressspcace *pci_s = container_of(iommu,
-                                                      iopmp_pci_addressspcace,
-                                                      iommu);
-        s = ATCIOPMP300(pci_s->iopmp);
-        /* If device does not specify sid, use id from pci */
-        if (sid == 0) {
-            sid = pci_id;
-        }
-    } else {
-        s = ATCIOPMP300(container_of(iommu, Atciopmp300state, iommu));
-    }
+    s = ATCIOPMP300(container_of(iommu, Atciopmp300state, iommu));
+
     entry.target_as = &s->downstream_as;
 
     if (s->transaction_state[sid].supported) {
@@ -892,9 +757,16 @@ static IOMMUTLBEntry iopmp_translate(IOMMUMemoryRegion *iommu, hwaddr addr,
     }
 
     if (s->sid_stall[sid]) {
-        entry.target_as = &s->stall_io_as;
-        entry.perm = IOMMU_RW;
-        return entry;
+        if (bql_locked()) {
+            bql_unlock();
+            lock = true;
+        }
+        while (s->sid_stall[sid]) {
+            ;
+        }
+        if (lock) {
+            bql_lock();
+        }
     }
 
     result = match_entry(s, sid, start_addr, end_addr, &md_idx, &entry_idx,
@@ -911,22 +783,6 @@ static IOMMUTLBEntry iopmp_translate(IOMMUMemoryRegion *iommu, hwaddr addr,
         }
         iopmp_perm = s->regs.entry[entry_idx].cfg_reg & IOPMP_RWX;
 
-        if (s->sps_en) {
-            /* SPS extension does not affect x permission */
-            if (md_idx < 31) {
-                srcmd_rw = IOPMP_XO | ((s->regs.srcmd_r[sid] >>
-                                        (md_idx + R_SRCMD_R0_MD_SHIFT)) & 0x1);
-                srcmd_rw |= ((s->regs.srcmd_w[sid] >>
-                             (md_idx + R_SRCMD_W0_MD_SHIFT)) & 0x1) << 1;
-            } else {
-                srcmd_rw = IOPMP_XO | ((s->regs.srcmd_rh[sid] >>
-                                        (md_idx + R_SRCMD_R0_MD_SHIFT - 32))
-                                       & 0x1);
-                srcmd_rw |= ((s->regs.srcmd_wh[sid] >>
-                             (md_idx + R_SRCMD_W0_MD_SHIFT - 32)) & 0x1) << 1;
-            }
-            iopmp_perm &= srcmd_rw;
-        }
         if (flags) {
             if ((entry_cfg_iommu_access_flags(iopmp_perm) & flags) == 0) {
                 entry.target_as = &s->blocked_rw_as;
@@ -1223,36 +1079,6 @@ static const MemoryRegionOps iopmp_block_x_ops = {
     .valid = {.min_access_size = 1, .max_access_size = 8},
 };
 
-static MemTxResult iopmp_handle_stall(Atciopmp300state *s, hwaddr addr,
-                                      MemTxAttrs attrs)
-{
-    return MEMTX_IOPMP_STALL;
-}
-
-static MemTxResult iopmp_stall_write(void *opaque, hwaddr addr, uint64_t value,
-                                     unsigned size, MemTxAttrs attrs)
-{
-    Atciopmp300state *s = ATCIOPMP300(opaque);
-
-    return iopmp_handle_stall(s, addr, attrs);
-}
-
-static MemTxResult iopmp_stall_read(void *opaque, hwaddr addr, uint64_t *pdata,
-                                    unsigned size, MemTxAttrs attrs)
-{
-    Atciopmp300state *s = ATCIOPMP300(opaque);
-
-    *pdata = 0;
-    return iopmp_handle_stall(s, addr, attrs);
-}
-
-static const MemoryRegionOps iopmp_stall_io_ops = {
-    .read_with_attrs = iopmp_stall_read,
-    .write_with_attrs = iopmp_stall_write,
-    .endianness = DEVICE_NATIVE_ENDIAN,
-    .valid = {.min_access_size = 1, .max_access_size = 8},
-};
-
 static void iopmp_realize(DeviceState *dev, Error **errp)
 {
     Object *obj = OBJECT(dev);
@@ -1263,23 +1089,15 @@ static void iopmp_realize(DeviceState *dev, Error **errp)
     s->downstream = get_system_memory();
     size = memory_region_size(s->downstream);
     qemu_mutex_init(&s->iopmp_transaction_mutex);
-    s->prog_prient = CFG_PROG_PRIENT;
-    s->sid_num = MIN(s->sid_num, IOPMP_MAX_SID_NUM);
-    s->md_num = MIN(s->md_num, IOPMP_MAX_MD_NUM);
-    s->entry_num = MIN(s->entry_num, IOPMP_MAX_ENTRY_NUM);
-    s->k = MIN(s->k, IOPMP_MAX_K_NUM);
+    s->sid_num = MIN(s->sid_num, IOPMP300_MAX_SID_NUM);
+    s->md_num = MIN(s->md_num, IOPMP300_MAX_MD_NUM);
+    s->entry_num = MIN(s->entry_num, IOPMP300_MAX_ENTRY_NUM);
+    s->k = MIN(s->k, IOPMP300_MAX_K_NUM);
 
-    if (!s->model_str || strcmp(s->model_str, "rapidk") == 0) {
-        /* apply default model */
-        s->model = IOPMP_MODEL_RAPIDK;
-        s->regs.mdcfglck = FIELD_DP32(s->regs.mdcfglck, MDCFGLCK, F, s->md_num);
-        s->regs.mdcfglck = FIELD_DP32(s->regs.mdcfglck, MDCFGLCK, L, 1);
-        s->regs.mdcfg[0] = s->k;
-    } else {
-        error_setg(errp, "IOPMP model %s is not supported", s->model_str);
-        error_append_hint(errp, "Valid value is rapidk.\n");
-        return;
-    }
+    s->regs.mdcfglck = FIELD_DP32(s->regs.mdcfglck, MDCFGLCK, F, s->md_num);
+    s->regs.mdcfglck = FIELD_DP32(s->regs.mdcfglck, MDCFGLCK, L, 1);
+    s->regs.mdcfg[0] = s->k;
+
     memory_region_init_iommu(&s->iommu, sizeof(s->iommu),
                              TYPE_IOPMP_IOMMU_MEMORY_REGION,
                              obj, "atciopmp300-sysbus-iommu", UINT64_MAX);
@@ -1326,11 +1144,6 @@ static void iopmp_realize(DeviceState *dev, Error **errp)
     address_space_init(&s->blocked_x_as, &s->blocked_x,
                        "iopmp-blocked-x-as");
 
-    memory_region_init_io(&s->stall_io, obj, &iopmp_stall_io_ops,
-                          s, "iopmp-stall-io", size);
-    address_space_init(&s->stall_io_as, &s->stall_io,
-                       "iopmp-stall-io-as");
-
     object_initialize_child(OBJECT(s), "iopmp_transaction_info",
                             &s->transaction_info_sink,
                             TYPE_IOPMP_TRANSACTION_INFO_SINK);
@@ -1341,18 +1154,15 @@ static void iopmp_reset(DeviceState *dev)
     Atciopmp300state *s = ATCIOPMP300(dev);
 
     qemu_set_irq(s->irq, 0);
-    memset(&s->regs, 0, sizeof(iopmp_regs));
-    memset(&s->entry_addr, 0, IOPMP_MAX_ENTRY_NUM * sizeof(iopmp_addr_t));
-    memset(&s->sid_stall, 0, s->sid_num * sizeof(bool));
+    memset(&s->regs, 0, sizeof(iopmp300_regs));
+    memset(&s->entry_addr, 0, IOPMP300_MAX_ENTRY_NUM * sizeof(iopmp_addr_t));
+    memset((void *)s->sid_stall, 0, s->sid_num * sizeof(bool));
 
-    s->prog_prient = CFG_PROG_PRIENT;
     s->enable = 0;
 
-    if (s->model == IOPMP_MODEL_RAPIDK) {
-        s->regs.mdcfglck = FIELD_DP32(s->regs.mdcfglck, MDCFGLCK, F, s->md_num);
-        s->regs.mdcfglck = FIELD_DP32(s->regs.mdcfglck, MDCFGLCK, L, 1);
-        s->regs.mdcfg[0] = s->k;
-    }
+    s->regs.mdcfglck = FIELD_DP32(s->regs.mdcfglck, MDCFGLCK, F, s->md_num);
+    s->regs.mdcfglck = FIELD_DP32(s->regs.mdcfglck, MDCFGLCK, L, 1);
+    s->regs.mdcfg[0] = s->k;
 }
 
 static int iopmp_attrs_to_index(IOMMUMemoryRegion *iommu, MemTxAttrs attrs)
@@ -1377,11 +1187,7 @@ static void iopmp_iommu_memory_region_class_init(ObjectClass *klass, void *data)
 }
 
 static Property iopmp_property[] = {
-    DEFINE_PROP_STRING("model", Atciopmp300state, model_str),
-    DEFINE_PROP_BOOL("sps_en", Atciopmp300state, sps_en, false),
     DEFINE_PROP_UINT32("k", Atciopmp300state, k, CFG_IOPMP_MODEL_K),
-    DEFINE_PROP_UINT32("prio_entry", Atciopmp300state, prio_entry,
-                       CFG_PRIO_ENTRY),
     DEFINE_PROP_UINT32("sid_num", Atciopmp300state, sid_num, IOPMP_SID_NUM),
     DEFINE_PROP_UINT32("md_num", Atciopmp300state, md_num, IOPMP_MD_NUM),
     DEFINE_PROP_UINT32("entry_num", Atciopmp300state, entry_num,
@@ -1419,39 +1225,6 @@ iopmp_iommu_memory_region_info = {
     .parent = TYPE_IOMMU_MEMORY_REGION,
     .class_init = iopmp_iommu_memory_region_class_init,
 };
-
-static AddressSpace *atciopmp300_find_add_as(PCIBus *bus, void *opaque,
-                                             int devfn)
-{
-    Atciopmp300state *s = opaque;
-    uint32_t id = PCI_BUILD_BDF(pci_bus_num(bus), devfn) % s->sid_num;
-    iopmp_pci_addressspcace *iopmp_pci = s->iopmp_pci[id];
-
-    if (iopmp_pci == NULL) {
-        g_autofree char *name = NULL;
-        name = g_strdup_printf("atciopmp300-pci-iommu%d", id);
-        iopmp_pci = g_new0(iopmp_pci_addressspcace, 1);
-        iopmp_pci->iopmp = opaque;
-        memory_region_init_iommu(&iopmp_pci->iommu,
-                                 sizeof(iopmp_pci->iommu),
-                                 TYPE_IOPMP_IOMMU_MEMORY_REGION,
-                                 OBJECT(s), name, UINT64_MAX);
-        address_space_init(&iopmp_pci->as,
-                           MEMORY_REGION(&iopmp_pci->iommu), "iommu");
-    }
-    return &iopmp_pci->as;
-}
-
-static const PCIIOMMUOps iopmp_iommu_ops = {
-    .get_address_space = atciopmp300_find_add_as,
-};
-
-void iopmp_setup_pci(DeviceState *iopmp_dev, PCIBus *bus)
-{
-    Atciopmp300state *s = ATCIOPMP300(iopmp_dev);
-    pci_setup_iommu(bus, &iopmp_iommu_ops, s);
-}
-
 
 /*
  * Alias subregions from the source memory region to the destination memory

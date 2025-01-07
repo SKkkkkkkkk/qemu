@@ -38,6 +38,8 @@ system_ss.add(when: 'CONFIG_SIFIVE_E_AON', if_true: files('sifive_e_aon.c'))
 system_ss.add(when: 'CONFIG_SIFIVE_U_OTP', if_true: files('sifive_u_otp.c'))
 system_ss.add(when: 'CONFIG_SIFIVE_U_PRCI', if_true: files('sifive_u_prci.c'))
 specific_ss.add(when: 'CONFIG_ATCIOPMP300', if_true: files('atciopmp300.c'))
+specific_ss.add(when: 'CONFIG_ATCIOPMP200', if_true: files('atciopmp200.c'))
+specific_ss.add(when: 'CONFIG_ATCIOPMP100', if_true: files('atciopmp100.c'))
 specific_ss.add(when: 'CONFIG_RISCV_IOPMP', if_true: files('riscv_iopmp_dispatcher.c'))
 
 subdir('macio')

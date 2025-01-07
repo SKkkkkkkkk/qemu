@@ -55,6 +55,8 @@
 #include "hw/rtc/atcrtc100.h"
 #include "hw/watchdog/atcwdt200.h"
 #include "hw/misc/atciopmp300.h"
+#include "hw/misc/atciopmp200.h"
+#include "hw/misc/atciopmp100.h"
 #include "hw/misc/riscv_iopmp_dispatcher.h"
 
 #define BIOS_FILENAME ""
@@ -63,45 +65,48 @@ static const struct MemmapEntry {
     hwaddr base;
     hwaddr size;
 } andes_ae350_memmap[] = {
-    [ANDES_AE350_DRAM]      = { 0x00000000, 0x80000000 },
-    [ANDES_AE350_MROM]      = { 0x80000000,  0x8000000 },
-    [ANDES_AE350_SLAVEPORT0_ILM] = { 0xa0000000,   0x200000 },
-    [ANDES_AE350_SLAVEPORT0_DLM] = { 0xa0200000,   0x200000 },
-    [ANDES_AE350_SLAVEPORT1_ILM] = { 0xa0400000,   0x200000 },
-    [ANDES_AE350_SLAVEPORT1_DLM] = { 0xa0600000,   0x200000 },
-    [ANDES_AE350_SLAVEPORT2_ILM] = { 0xa0800000,   0x200000 },
-    [ANDES_AE350_SLAVEPORT2_DLM] = { 0xa0a00000,   0x200000 },
-    [ANDES_AE350_SLAVEPORT3_ILM] = { 0xa0c00000,   0x200000 },
-    [ANDES_AE350_SLAVEPORT3_DLM] = { 0xa0e00000,   0x200000 },
-    [ANDES_AE350_NOR]       = { 0x88000000,  0x4000000 },
-    [ANDES_AE350_BMC]       = { 0xc0000000,   0x100000 },
-    [ANDES_AE350_MAC]       = { 0xe0100000,   0x100000 },
-    [ANDES_AE350_LCD]       = { 0xe0200000,   0x100000 },
-    [ANDES_AE350_SMC]       = { 0xe0400000,   0x100000 },
-    [ANDES_AE350_L2C]       = { 0xe0500000,   0x100000 },
-    [ANDES_AE350_IOPMP_APB] = { 0xf1000000,   0x4000   },
-    [ANDES_AE350_IOPMP_RAM] = { 0xf1004000,   0x4000   },
-    [ANDES_AE350_IOPMP_SLP] = { 0xf1008000,   0x4000   },
-    [ANDES_AE350_IOPMP_ROM] = { 0xf100c000,   0x4000   },
-    [ANDES_AE350_IOPMP_IOCP] = { 0xf1010000,   0x4000   },
-    [ANDES_AE350_IOPMP_DFS] = { 0xf1014000,   0x4000   },
-    [ANDES_AE350_PLIC]      = { 0xe4000000,   0x400000 },
-    [ANDES_AE350_PLMT]      = { 0xe6000000,   0x100000 },
-    [ANDES_AE350_PLICSW]    = { 0xe6400000,   0x400000 },
-    [ANDES_AE350_SMU]       = { 0xf0100000,   0x100000 },
-    [ANDES_AE350_UART1]     = { 0xf0200000,   0x100000 },
-    [ANDES_AE350_UART2]     = { 0xf0300000,   0x100000 },
-    [ANDES_AE350_PIT]       = { 0xf0400000,   0x100000 },
-    [ANDES_AE350_WDT]       = { 0xf0500000,   0x100000 },
-    [ANDES_AE350_RTC]       = { 0xf0600000,   0x100000 },
-    [ANDES_AE350_GPIO]      = { 0xf0700000,   0x100000 },
-    [ANDES_AE350_I2C]       = { 0xf0a00000,   0x100000 },
-    [ANDES_AE350_SPI]       = { 0xf0b00000,   0x100000 },
-    [ANDES_AE350_DMAC]      = { 0xf0c00000,   0x100000 },
-    [ANDES_AE350_SND]       = { 0xf0d00000,   0x100000 },
-    [ANDES_AE350_SDC]       = { 0xf0e00000,   0x100000 },
-    [ANDES_AE350_SPI2]      = { 0xf0f00000,   0x100000 },
-    [ANDES_AE350_VIRTIO]    = { 0xfe000000,     0x1000 },
+    [ANDES_AE350_DRAM]              = {  0x00000000,  0x80000000 },
+    [ANDES_AE350_MROM]              = {  0x80000000,   0x8000000 },
+    [ANDES_AE350_NOR]               = {  0x88000000,   0x4000000 },
+    [ANDES_AE350_SLAVEPORT0_ILM]    = {  0xa0000000,    0x200000 },
+    [ANDES_AE350_SLAVEPORT0_DLM]    = {  0xa0200000,    0x200000 },
+    [ANDES_AE350_SLAVEPORT1_ILM]    = {  0xa0400000,    0x200000 },
+    [ANDES_AE350_SLAVEPORT1_DLM]    = {  0xa0600000,    0x200000 },
+    [ANDES_AE350_SLAVEPORT2_ILM]    = {  0xa0800000,    0x200000 },
+    [ANDES_AE350_SLAVEPORT2_DLM]    = {  0xa0a00000,    0x200000 },
+    [ANDES_AE350_SLAVEPORT3_ILM]    = {  0xa0c00000,    0x200000 },
+    [ANDES_AE350_SLAVEPORT3_DLM]    = {  0xa0e00000,    0x200000 },
+    [ANDES_AE350_BMC]               = {  0xc0000000,    0x100000 },
+    [ANDES_AE350_MAC]               = {  0xe0100000,    0x100000 },
+    [ANDES_AE350_LCD]               = {  0xe0200000,    0x100000 },
+    [ANDES_AE350_SMC]               = {  0xe0400000,    0x100000 },
+    [ANDES_AE350_L2C]               = {  0xe0500000,    0x100000 },
+    [ANDES_AE350_PLIC]              = {  0xe4000000,    0x400000 },
+    [ANDES_AE350_PLMT]              = {  0xe6000000,    0x100000 },
+    [ANDES_AE350_PLICSW]            = {  0xe6400000,    0x400000 },
+    [ANDES_AE350_SMU]               = {  0xf0100000,    0x100000 },
+    [ANDES_AE350_UART1]             = {  0xf0200000,    0x100000 },
+    [ANDES_AE350_UART2]             = {  0xf0300000,    0x100000 },
+    [ANDES_AE350_PIT]               = {  0xf0400000,    0x100000 },
+    [ANDES_AE350_WDT]               = {  0xf0500000,    0x100000 },
+    [ANDES_AE350_RTC]               = {  0xf0600000,    0x100000 },
+    [ANDES_AE350_GPIO]              = {  0xf0700000,    0x100000 },
+    [ANDES_AE350_I2C]               = {  0xf0a00000,    0x100000 },
+    [ANDES_AE350_SPI]               = {  0xf0b00000,    0x100000 },
+    [ANDES_AE350_DMAC]              = {  0xf0c00000,    0x100000 },
+    [ANDES_AE350_SND]               = {  0xf0d00000,    0x100000 },
+    [ANDES_AE350_SDC]               = {  0xf0e00000,    0x100000 },
+    [ANDES_AE350_SPI2]              = {  0xf0f00000,    0x100000 },
+    [ANDES_AE350_IOPMP_APB]         = {  0xf1000000,      0x4000 },
+    [ANDES_AE350_IOPMP_RAM]         = {  0xf1004000,      0x4000 },
+    [ANDES_AE350_IOPMP_SLP]         = {  0xf1008000,      0x4000 },
+    [ANDES_AE350_IOPMP_ROM]         = {  0xf100c000,      0x4000 },
+    [ANDES_AE350_IOPMP_IOCP]        = {  0xf1010000,      0x4000 },
+    [ANDES_AE350_IOPMP_DFS]         = {  0xf1014000,      0x4000 },
+    [ANDES_AE350_IOPMP_ILMAP]       = {  0xf1018000,      0x4000 },
+    [ANDES_AE350_IOPMP_DLMAP]       = {  0xf101c000,      0x4000 },
+    [ANDES_AE350_IOPMP100]          = {  0xf1024000,      0x4000 },
+    [ANDES_AE350_VIRTIO]            = {  0xfe000000,      0x1000 },
     [ANDES_AE350_UNCACHEABLE_ALIAS] = { 0x100000000, 0x100000000 },
 };
 
@@ -111,19 +116,44 @@ static void create_fdt_iopmp(AndesAe350BoardState *bs,
 {
     g_autofree char *name = NULL;
     MachineState *ms = MACHINE(bs);
+    const struct MemmapEntry *entry;
+    const int cpu_23_series_iopmp_list[CPU_23_SERIES_IOPMP200_NUM] = {
+        ANDES_AE350_IOPMP_APB, ANDES_AE350_IOPMP_RAM, ANDES_AE350_IOPMP_ROM,
+        ANDES_AE350_IOPMP_ILMAP, ANDES_AE350_IOPMP_DLMAP
+    };
 
-    for (int i = 0; i < AE350_IOPMP_TARGET_NUM; i++) {
-        name = g_strdup_printf("/soc/iopmp@%lx",
-                               (long)memmap[ANDES_AE350_IOPMP_APB + i].base);
+    if (bs->soc.secure_platform == ANDES_SECURE_PLATFORM_CPU_45_SERIES) {
+        for (int i = 0; i < CPU_45_SERIES_IOPMP300_NUM; i++) {
+            entry = &memmap[ANDES_AE350_IOPMP_APB + i];
+            name = g_strdup_printf("/soc/atciopmp300@%lx", (long)entry->base);
+            qemu_fdt_add_subnode(ms->fdt, name);
+            qemu_fdt_setprop_string(ms->fdt, name, "compatible", "atciopmp300");
+            qemu_fdt_setprop_cells(ms->fdt, name, "reg", 0x0, entry->base,
+                                   0x0, entry->size);
+            qemu_fdt_setprop_cell(ms->fdt, name, "interrupt-parent",
+                                  irq_mmio_phandle);
+            qemu_fdt_setprop_cells(ms->fdt, name, "interrupts",
+                                   ANDES_AE350_IOPMP_IRQ, 0x4);
+        }
+    } else if (bs->soc.secure_platform == ANDES_SECURE_PLATFORM_CPU_23_SERIES) {
+        for (int i = 0; i < CPU_23_SERIES_IOPMP200_NUM; i++) {
+            entry = &memmap[cpu_23_series_iopmp_list[i]];
+            name = g_strdup_printf("/soc/atciopmp200@%lx", (long)entry->base);
+            qemu_fdt_add_subnode(ms->fdt, name);
+            qemu_fdt_setprop_string(ms->fdt, name, "compatible", "atciopmp200");
+            qemu_fdt_setprop_cells(ms->fdt, name, "reg", 0x0, entry->base,
+                                   0x0, entry->size);
+            qemu_fdt_setprop_cell(ms->fdt, name, "interrupt-parent",
+                                  irq_mmio_phandle);
+            qemu_fdt_setprop_cells(ms->fdt, name, "interrupts",
+                                   ANDES_AE350_IOPMP_IRQ, 0x4);
+        }
+        entry = &memmap[ANDES_AE350_IOPMP100];
+        name = g_strdup_printf("/soc/atciopmp100@%lx", (long)entry->base);
         qemu_fdt_add_subnode(ms->fdt, name);
-        qemu_fdt_setprop_string(ms->fdt, name, "compatible", "riscv_iopmp");
-        qemu_fdt_setprop_cells(ms->fdt, name, "reg", 0x0,
-            memmap[ANDES_AE350_IOPMP_APB + i].base, 0x0,
-            memmap[ANDES_AE350_IOPMP_APB + i].size);
-        qemu_fdt_setprop_cell(ms->fdt, name, "interrupt-parent",
-                              irq_mmio_phandle);
-        qemu_fdt_setprop_cells(ms->fdt, name, "interrupts",
-                               ANDES_AE350_IOPMP_IRQ, 0x4);
+        qemu_fdt_setprop_string(ms->fdt, name, "compatible", "atciopmp100");
+        qemu_fdt_setprop_cells(ms->fdt, name, "reg", 0x0, entry->base,
+                               0x0, entry->size);
     }
 }
 
@@ -322,7 +352,7 @@ create_fdt(AndesAe350BoardState *bs, const struct MemmapEntry *memmap,
         g_free(virtio_name);
     }
 
-    if (s->secure_platform == ANDES_SECURE_PLATFORM_CPU_45_SERIES) {
+    if (s->secure_platform != ANDES_SECURE_PLATFORM_NONE) {
         create_fdt_iopmp(bs, memmap, plic_phandle);
     }
 }
@@ -345,13 +375,40 @@ static char *init_hart_config(const char *hart_config, int num_harts)
     return result;
 }
 
-static const MemMapEntry iopmp_memmap[] = {
-    [IOPMP_APB]      = { 0xf0000000, 0x10000000 },
-    [IOPMP_RAM]      = { 0x00000000, 0x80000000 },
-    [IOPMP_SLP]      = { 0xa0000000,  0x1000000 },
-    [IOPMP_ROM]      = { 0x80000000,  0x8000000 },
-    [IOPMP_IOCP]     = { 0x0,   0x0 },
-    [IOPMP_DFS]      = { 0x0,   0x0 },
+static const MemMapEntry cpu_45_series_iopmp_memmap[] = {
+    [CPU_45_SERIES_IOPMP_APB]      = { 0xf0000000, 0x10000000 },
+    [CPU_45_SERIES_IOPMP_RAM]      = { 0x00000000, 0x80000000 },
+    [CPU_45_SERIES_IOPMP_SLP]      = { 0xa0000000,  0x1000000 },
+    [CPU_45_SERIES_IOPMP_ROM]      = { 0x80000000,  0x8000000 },
+    [CPU_45_SERIES_IOPMP_IOCP]     = {        0x0,        0x0 },
+    [CPU_45_SERIES_IOPMP_DFS]      = {        0x0,        0x0 },
+};
+
+static const struct MemMapEntry cpu_23_series_iopmp_memmap[] = {
+    [CPU_23_SERIES_IOPMP_AHB]      = { 0xf0000000, 0x10000000 },
+    [CPU_23_SERIES_IOPMP_RAM]      = { 0x00000000, 0x80000000 },
+    [CPU_23_SERIES_IOPMP_ROM]      = { 0x80000000,  0x8000000 },
+    [CPU_23_SERIES_IOPMP_ILMAP]    = { 0xa0000000,   0x200000 },
+    [CPU_23_SERIES_IOPMP_DLMAP]    = { 0xa0200000,   0x200000 },
+};
+
+static const struct MemMapEntry iopmp100_port[] = {
+    [IOPMP100_PORT_SMU]              = { 0xf0100000, 0x100000 },
+    [IOPMP100_PORT_UART1]            = { 0xf0200000, 0x100000 },
+    [IOPMP100_PORT_UART2]            = { 0xf0300000, 0x100000 },
+    [IOPMP100_PORT_PIT]              = { 0xf0400000, 0x100000 },
+    [IOPMP100_PORT_WDT]              = { 0xf0500000, 0x100000 },
+    [IOPMP100_PORT_RTC]              = { 0xf0600000, 0x100000 },
+    [IOPMP100_PORT_GPIO]             = { 0xf0700000, 0x100000 },
+    [IOPMP100_PORT_I2C]              = { 0xf0a00000, 0x100000 },
+    [IOPMP100_PORT_SPI1]             = { 0xf0b00000, 0x100000 },
+    [IOPMP100_PORT_SPI2]             = { 0xf0f00000, 0x100000 },
+    [IOPMP100_PORT_SDC]              = { 0xf0e00000, 0x100000 },
+    [IOPMP100_PORT_DMAC]             = { 0xf0c00000, 0x100000 },
+    [IOPMP100_PORT_SSP]              = { 0xf0d00000, 0x100000 },
+    [IOPMP100_PORT_DTROM]            = { 0xf2000000, 0x100000 },
+    [IOPMP100_PORT_IOPMP]            = { 0xf1000000, 0x100000 },
+    [IOPMP100_PORT_ABPBRG_APBDEC]    = { 0xf0000000, 0x100000 }
 };
 
 static void iopmp_setup_cpus(RISCVHartArrayState *cpus, uint32_t rrid)
@@ -373,6 +430,10 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
     char *plic_hart_config, *plicsw_hart_config;
     Iopmp_StreamSink *iopmp_sink;
     Object *obj = OBJECT(dev_soc);
+    const int cpu_23_series_iopmp_list[CPU_23_SERIES_IOPMP200_NUM] = {
+        ANDES_AE350_IOPMP_APB, ANDES_AE350_IOPMP_RAM, ANDES_AE350_IOPMP_ROM,
+        ANDES_AE350_IOPMP_ILMAP, ANDES_AE350_IOPMP_DLMAP
+    };
 
     if (s->ilm_size) {
         if (s->ilm_size < ANDES_LM_SIZE_MIN || s->ilm_size > ANDES_LM_SIZE_MAX
@@ -575,10 +636,10 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
                                 &(s->iopmp_dispatcher),
                                 TYPE_IOPMP_DISPATCHER);
         qdev_prop_set_uint32(DEVICE(&s->iopmp_dispatcher), "target-num",
-                                AE350_IOPMP_TARGET_NUM);
+                             CPU_45_SERIES_IOPMP300_NUM);
         sysbus_realize(SYS_BUS_DEVICE(&s->iopmp_dispatcher), NULL);
 
-        for (int i = 0; i < AE350_IOPMP_TARGET_NUM; i++) {
+        for (int i = 0; i < CPU_45_SERIES_IOPMP300_NUM; i++) {
             s->iopmp_dev[i] =
                 atciopmp300_create(memmap[ANDES_AE350_IOPMP_APB + i].base,
                                    qdev_get_gpio_in(DEVICE(s->plic),
@@ -586,8 +647,8 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
             iopmp_sink = &(ATCIOPMP300(s->iopmp_dev[i])->transaction_info_sink);
             iopmp_dispatcher_add_target(DEVICE(&s->iopmp_dispatcher),
                                         (StreamSink *)iopmp_sink,
-                                        iopmp_memmap[i].base,
-                                        iopmp_memmap[i].size, i);
+                                        cpu_45_series_iopmp_memmap[i].base,
+                                        cpu_45_series_iopmp_memmap[i].size, i);
         }
 
         iopmp_setup_cpus(&s->cpus, 0);
@@ -595,7 +656,34 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
         atcdmac300_connect_iopmp(DEVICE(&s->dma), &address_space_memory,
             (StreamSink *)&(s->iopmp_dispatcher.transaction_info_sink),
             ANDES_AE350_DMAC_INF0_IOPMP_SID, ANDES_AE350_DMAC_INF1_IOPMP_SID);
-    } else if (s->secure_platform != ANDES_SECURE_PLATFORM_DISABLE) {
+    } else if (s->secure_platform == ANDES_SECURE_PLATFORM_CPU_23_SERIES) {
+        object_initialize_child(obj, "iopmp_dispatcher",
+                                &(s->iopmp_dispatcher),
+                                TYPE_IOPMP_DISPATCHER);
+        /* D23 secure platform */
+        qdev_prop_set_uint32(DEVICE(&s->iopmp_dispatcher), "target-num",
+                             CPU_23_SERIES_IOPMP200_NUM);
+        sysbus_realize(SYS_BUS_DEVICE(&s->iopmp_dispatcher), NULL);
+        /* ATCIOPMP200 */
+        for (int i = 0; i < CPU_23_SERIES_IOPMP200_NUM; i++) {
+            s->iopmp_dev[i] =
+                atciopmp200_create(memmap[cpu_23_series_iopmp_list[i]].base,
+                    qdev_get_gpio_in(DEVICE(s->plic), ANDES_AE350_IOPMP_IRQ));
+            iopmp_sink = iopmp200_get_sink(s->iopmp_dev[i]);
+            iopmp_dispatcher_add_target(DEVICE(&s->iopmp_dispatcher),
+                                        (StreamSink *)iopmp_sink,
+                                        cpu_23_series_iopmp_memmap[i].base,
+                                        cpu_23_series_iopmp_memmap[i].size, i);
+        }
+        /* ATCIOPMP100 */
+        s->iopmp100_dev = atciopmp100_create(memmap[ANDES_AE350_IOPMP100].base);
+
+        iopmp_setup_cpus(&s->cpus, 0);
+        /* DMA connect to iopmp */
+        atcdmac300_connect_iopmp(DEVICE(&s->dma), &address_space_memory,
+            (StreamSink *)&(s->iopmp_dispatcher.transaction_info_sink),
+            ANDES_AE350_DMAC_INF0_IOPMP_SID, ANDES_AE350_DMAC_INF1_IOPMP_SID);
+    } else if (s->secure_platform != ANDES_SECURE_PLATFORM_NONE) {
         error_report("%d secure platform is not supported.",
                      s->secure_platform);
         exit(1);
@@ -851,9 +939,20 @@ static void andes_ae350_machine_init(MachineState *machine)
                 kernel_entry, fdt_load_addr);
     if (bs->soc.secure_platform == ANDES_SECURE_PLATFORM_CPU_45_SERIES) {
         /* After all protected devices are realized, setup iopmp downstream */
-        for (int i = 0; i < AE350_IOPMP_TARGET_NUM; i++) {
+        for (int i = 0; i < CPU_45_SERIES_IOPMP300_NUM; i++) {
             iopmp300_setup_system_memory(bs->soc.iopmp_dev[i],
-                                         &iopmp_memmap[i], 1);
+                                         &cpu_45_series_iopmp_memmap[i], 1);
+        }
+    } else if (bs->soc.secure_platform == ANDES_SECURE_PLATFORM_CPU_23_SERIES) {
+        /*
+         * Make sure all protect devices had been realized before call
+         * this function
+         */
+        iopmp100_setup_system_memory_range(bs->soc.iopmp100_dev, iopmp100_port,
+                                           IOPMP100_PORT_NUM);
+        for (int i = 0; i < CPU_23_SERIES_IOPMP200_NUM; i++) {
+            iopmp200_setup_system_memory(bs->soc.iopmp_dev[i],
+                                         &cpu_23_series_iopmp_memmap[i], 1);
         }
     }
 }
@@ -927,7 +1026,7 @@ static Property andes_ae350_soc_property[] = {
     DEFINE_PROP_UINT64("hvm_size_pow_2", AndesAe350SocState, hvm_size_pow_2,
                        ANDES_HVM_SIZE_POW_2_DEFAULT),
     DEFINE_PROP_UINT32("secure_platform", AndesAe350SocState, secure_platform,
-                       ANDES_SECURE_PLATFORM_DISABLE),
+                       ANDES_SECURE_PLATFORM_NONE),
     DEFINE_PROP_END_OF_LIST(),
 };
 

@@ -228,6 +228,13 @@ config ATCIOPMP300
     bool
     select RISCV_IOPMP
 
+config ATCIOPMP200
+    bool
+    select RISCV_IOPMP
+
+config ATCIOPMP100
+    bool
+
 config RISCV_IOPMP
     bool
     select STREAM

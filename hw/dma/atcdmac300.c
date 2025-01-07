@@ -39,8 +39,6 @@
   #define LOG(x...) xLOG(x)
 #endif
 
-#define MEMTX_IOPMP_STALL (1 << 3)
-
 static void atcdmac300_dma_int_stat_update(ATCDMAC300State *s, int status,
                                            int ch)
 {
@@ -281,14 +279,6 @@ static void atcdmac300_thread_run_channel(void *opaque, int ch)
                 for (i = 0; i < axi_src_len; i++) {
                     result = dma_iopmp_read(s, src_addr, &buf[buf_index],
                                             src_width_byte, &src_transaction);
-                    while (result == MEMTX_IOPMP_STALL) {
-                        bql_unlock();
-                        g_usleep(100);
-                        bql_lock();
-                        result = dma_iopmp_read(s, src_addr, &buf[buf_index],
-                                                src_width_byte,
-                                                &src_transaction);
-                    }
                     buf_index += src_width_byte;
                     if (result != MEMTX_OK) {
                         s->ChAbort &= ~(1 << ch);
@@ -342,14 +332,6 @@ static void atcdmac300_thread_run_channel(void *opaque, int ch)
                 for (i = 0; i < axi_dst_len; i++) {
                     result = dma_iopmp_write(s, dst_addr, &buf[buf_index],
                                              dst_width_byte, &dst_transaction);
-                    while (result == MEMTX_IOPMP_STALL) {
-                        bql_unlock();
-                        g_usleep(100);
-                        bql_lock();
-                        result = dma_iopmp_write(s, dst_addr, &buf[buf_index],
-                                                 dst_width_byte,
-                                                 &dst_transaction);
-                    }
                     buf_index += dst_width_byte;
                     if (result != MEMTX_OK) {
                         s->ChAbort &= ~(1 << ch);

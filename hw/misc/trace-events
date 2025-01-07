@@ -372,3 +372,10 @@ aspeed_sliio_read(uint64_t offset, unsigned int size, uint32_t data) "To 0x%" PR
 atciopmp300_read(uint64_t addr, uint32_t val) "addr 0x%"PRIx64" val 0x%x"
 atciopmp300_write(uint64_t addr, uint32_t val) "addr 0x%"PRIx64" val 0x%x"
 
+# atciopmp200.c
+atciopmp200_read(uint64_t addr, uint32_t val) "addr 0x%"PRIx64" val 0x%x"
+atciopmp200_write(uint64_t addr, uint32_t val) "addr 0x%"PRIx64" val 0x%x"
+
+# atciopmp100.c
+atciopmp100_read(uint64_t addr, uint32_t val) "addr 0x%"PRIx64" val 0x%x"
+atciopmp100_write(uint64_t addr, uint32_t val) "addr 0x%"PRIx64" val 0x%x"
