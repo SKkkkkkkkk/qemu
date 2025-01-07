@@ -26,6 +26,8 @@ system_ss.add(when: 'CONFIG_IOSB', if_true: files('iosb.c'))
 system_ss.add(when: 'CONFIG_VIRT_CTRL', if_true: files('virt_ctrl.c'))
 
 # RISC-V devices
+specific_ss.add(when: 'CONFIG_ATCBMC200', if_true: files('atcbmc200.c'))
+specific_ss.add(when: 'CONFIG_ATCBMC300', if_true: files('atcbmc300.c'))
 specific_ss.add(when: 'CONFIG_ATCSMU', if_true: files('andes_atcsmu.c'))
 system_ss.add(when: 'CONFIG_MCHP_PFSOC_DMC', if_true: files('mchp_pfsoc_dmc.c'))
 system_ss.add(when: 'CONFIG_MCHP_PFSOC_IOSCB', if_true: files('mchp_pfsoc_ioscb.c'))

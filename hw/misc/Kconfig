@@ -20,6 +20,12 @@ config ISA_TESTDEV
     default y if TEST_DEVICES
     depends on ISA_BUS
 
+config ATCBMC200
+    bool
+
+config ATCBMC300
+    bool
+
 config ATCSMU
     bool
 

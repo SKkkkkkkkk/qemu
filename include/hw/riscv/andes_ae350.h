@@ -47,6 +47,8 @@ typedef struct AndesAe350SocState {
     DeviceState *plic;
     DeviceState *plic_sw;
 
+    char *bmc_type;
+
     ATCDMAC300State dma;
     ATFMAC100State atfmac100;
     AndesATCSMUState atcsmu;
@@ -92,6 +94,7 @@ enum {
     ANDES_AE350_SLAVEPORT3_ILM,
     ANDES_AE350_SLAVEPORT3_DLM,
     ANDES_AE350_NOR,
+    ANDES_AE350_BMC,
     ANDES_AE350_MAC,
     ANDES_AE350_LCD,
     ANDES_AE350_SMC,

@@ -48,6 +48,8 @@
 #include "hw/timer/andes_plmt.h"
 #include "hw/timer/atcpit100.h"
 #include "hw/riscv/andes_ae350.h"
+#include "hw/misc/atcbmc200.h"
+#include "hw/misc/atcbmc300.h"
 #include "hw/misc/andes_atcsmu.h"
 #include "hw/sd/atfsdc010.h"
 #include "hw/rtc/atcrtc100.h"
@@ -72,6 +74,7 @@ static const struct MemmapEntry {
     [ANDES_AE350_SLAVEPORT3_ILM] = { 0xa0c00000,   0x200000 },
     [ANDES_AE350_SLAVEPORT3_DLM] = { 0xa0e00000,   0x200000 },
     [ANDES_AE350_NOR]       = { 0x88000000,  0x4000000 },
+    [ANDES_AE350_BMC]       = { 0xc0000000,   0x100000 },
     [ANDES_AE350_MAC]       = { 0xe0100000,   0x100000 },
     [ANDES_AE350_LCD]       = { 0xe0200000,   0x100000 },
     [ANDES_AE350_SMC]       = { 0xe0400000,   0x100000 },
@@ -406,6 +409,20 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
     }
 
     sysbus_realize(SYS_BUS_DEVICE(&s->cpus), &error_abort);
+
+    if (!s->bmc_type) {
+        object_property_set_str(obj, "bmc_type", "axi", &error_abort);
+    }
+    if (strncmp(s->bmc_type, "axi", 3) == 0) {
+        andes_atcbmc300_create(memmap[ANDES_AE350_BMC].base,
+                               memmap[ANDES_AE350_BMC].size);
+    } else if (strncmp(s->bmc_type, "ahb", 3) == 0) {
+        andes_atcbmc200_create(memmap[ANDES_AE350_BMC].base,
+                               memmap[ANDES_AE350_BMC].size);
+    } else {
+        error_report("%s BMC type is not supported.", s->bmc_type);
+        exit(1);
+    }
 
     plicsw_hart_config =
         init_hart_config(ANDES_PLICSW_HART_CONFIG, machine->smp.cpus);
@@ -896,6 +913,7 @@ static Property andes_ae350_soc_property[] = {
     /* Defaults for standard extensions */
     DEFINE_PROP_BOOL("uncacheable_alias_enable", AndesAe350SocState,
                       uncacheable_alias_enable, false),
+    DEFINE_PROP_STRING("bmc_type", AndesAe350SocState, bmc_type),
     DEFINE_PROP_UINT64("ilm_base", AndesAe350SocState, ilm_base, 0),
     DEFINE_PROP_UINT64("dlm_base", AndesAe350SocState, dlm_base, 0x200000),
     DEFINE_PROP_UINT32("ilm_size", AndesAe350SocState, ilm_size, 0x200000),
