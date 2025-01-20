@@ -207,7 +207,7 @@ void helper_andes_v5_hsp_check(CPURISCVState *env, target_ulong val)
 }
 
 #include "andes_ace_helper.h"
-target_ulong helper_andes_ace(CPURISCVState *env, target_ulong opcode)
+void helper_andes_ace(CPURISCVState *env, target_ulong opcode)
 {
     /* Save current function ra for TCG TB lookup when run ACE insn. */
     env->ace_ra = GETPC();
@@ -217,5 +217,4 @@ target_ulong helper_andes_ace(CPURISCVState *env, target_ulong opcode)
         qemu_printf("Run ace instruction result = %d\n", ret);
         riscv_raise_exception(env, RISCV_EXCP_ILLEGAL_INST, GETPC());
     }
-    return 0;
 }
