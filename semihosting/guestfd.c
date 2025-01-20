@@ -68,8 +68,8 @@ int alloc_guestfd(void)
 {
     guint i;
 
-    /* SYS_OPEN should return nonzero handle on success. Start guestfd from 3 */
-    for (i = 3; i < guestfd_array->len; i++) {
+    /* SYS_OPEN should return nonzero handle on success. Start guestfd from 1 */
+    for (i = 1; i < guestfd_array->len; i++) {
         GuestFD *gf = &g_array_index(guestfd_array, GuestFD, i);
 
         if (gf->type == GuestFDUnused) {
