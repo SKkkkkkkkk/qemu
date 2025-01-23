@@ -510,14 +510,13 @@ struct CPUArchState {
     AceAgentRunInsn ace_agent_run_insn;
     AceAgentGetRegister ace_agent_get_register;
     AceAgentSetRegister ace_agent_set_register;
+    AceAgentGetPacket ace_agent_get_packet;
 
     /* Andes ACE records the return address of the instruction for exception */
     uintptr_t ace_ra;
 
     /* Andes ACE debugger info  */
     uint32_t ace_acracm_reg_number;
-    uint32_t ace_lib_for_gdb_len;
-    char *ace_lib_for_gdb;
     void *ace_acr_info_list;
     unsigned char *ace_acr_value;
 

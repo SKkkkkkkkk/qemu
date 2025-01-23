@@ -43,8 +43,7 @@ int gdb_handle_query_rcmd_andes_query(GArray *params, void *user_ctx)
          * filename since ICEman did it
          */
         char filename[64];
-        if (qemu_ace_get_filename_for_gdb(gdbserver_state.mem_buf->data +
-            strlen(NDS_ACE_CMD), filename, gdbserver_state.g_cpu)) {
+        if (qemu_ace_get_filename_for_gdb(gdbserver_state.g_cpu, filename)) {
             gdb_put_packet("E04");
             return 0;
         }

@@ -854,13 +854,6 @@ static void riscv_cpu_validate_andes_ace(RISCVCPU *cpu, Error **errp)
                 return;
             }
         }
-        if (cpu->cfg.XAndesAceLibDbg != NULL) {
-            if (qemu_ace_load_lib_gdb(env, cpu->cfg.XAndesAceLibDbg)) {
-                error_setg(errp, "xandesacelibdbg '%s' load/register failed",
-                           cpu->cfg.XAndesAceLibDbg);
-                return;
-            }
-        }
     }
 }
 

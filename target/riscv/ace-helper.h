@@ -15,7 +15,7 @@
 #endif
 
 /* define ACE agent version, just use int value */
-#define ACE_AGENT_VERSION   101
+#define ACE_AGENT_VERSION   102
 
 enum ACE_CB_NAME {
     ACE_GET_XRF = 0,
@@ -96,6 +96,7 @@ typedef uint64_t* (*AceAgentGetRegister)(void *, uint64_t, uint32_t,
                                          uint32_t, uint32_t *);
 typedef uint64_t* (*AceAgentSetRegister)(void *, uint64_t, uint32_t, uint32_t,
                                          const uint64_t *, uint32_t);
+typedef const unsigned char* (*AceAgentGetPacket)(void *, uint64_t, uint32_t *);
 EXPORT_C int32_t ace_agent_register(void *, AceAgentFuncPtr *,
                                     uint32_t, const char *, uint64_t, int32_t);
 EXPORT_C int32_t ace_agent_run_insn(void *, uint32_t, uint64_t);
@@ -105,5 +106,6 @@ EXPORT_C uint64_t *ace_agent_get_register(void *, uint64_t, uint32_t,
                                           uint32_t, uint32_t *);
 EXPORT_C void ace_agent_set_register(void *, uint64_t, uint32_t, uint32_t,
                                      const uint64_t *, uint32_t);
-
+EXPORT_C const unsigned char *ace_agent_get_packet(void *, uint64_t,
+                                                   uint32_t *);
 #endif

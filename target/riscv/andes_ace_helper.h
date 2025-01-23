@@ -18,8 +18,7 @@ typedef struct {
     char name[1024 - (sizeof(unsigned) * 3)];
 } AceAcrInfo;
 
-int32_t qemu_ace_load_lib_gdb(CPURISCVState *env, const char *soname);
-int32_t qemu_ace_get_filename_for_gdb(unsigned char *, char *, CPUState *);
+int32_t qemu_ace_get_filename_for_gdb(CPUState *, char *);
 
 /* data access */
 uint64_t qemu_get_XRF(CPURISCVState *env, uint32_t index);
@@ -68,4 +67,5 @@ uint64_t *qemu_ace_agent_get_register(CPURISCVState *, uint32_t, uint32_t,
                                       uint32_t *);
 void qemu_ace_agent_set_register(CPURISCVState *, uint32_t, uint32_t,
                                  const uint64_t *, uint32_t);
+const unsigned char *qemu_ace_agent_get_packet(CPURISCVState *, uint32_t *);
 #endif

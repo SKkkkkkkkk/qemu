@@ -17,7 +17,7 @@
 #define NDS_OTHER_CMD           "nds "
 
 /* this function is coming from andes_ace_help */
-int32_t qemu_ace_get_filename_for_gdb(unsigned char *, char *, CPUState *);
+int32_t qemu_ace_get_filename_for_gdb(CPUState *, char *);
 
 int gdb_handle_query_rcmd_andes_query(GArray *, void *);
 #endif
