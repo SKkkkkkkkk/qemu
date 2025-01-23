@@ -721,7 +721,11 @@ static RISCVException write_shpmevent(CPURISCVState *env, int csrno,
 static RISCVException write_mslideleg(CPURISCVState *env, int csrno,
                                       target_ulong val)
 {
-    env->andes_csr.csrno[csrno] = val & WRITE_MASK_CSR_SLIE;
+    if (riscv_cpu_cfg(env)->ext_ssaia) {
+        env->andes_csr.csrno[csrno] = val & WRITE_MASK_CSR_SLIE_AIA;
+    } else {
+        env->andes_csr.csrno[csrno] = val & WRITE_MASK_CSR_SLIE;
+    }
     return RISCV_EXCP_NONE;
 }
 
@@ -748,10 +752,18 @@ static RISCVException write_slix(CPURISCVState *env, int csrno,
 {
     target_ulong mask;
 
-    if (csrno == CSR_SLIP) {
-        mask = WRITE_MASK_CSR_SLIP;
+    if (riscv_cpu_cfg(env)->ext_ssaia) {
+        if (csrno == CSR_SLIP) {
+            mask = WRITE_MASK_CSR_SLIP_AIA;
+        } else {
+            mask = WRITE_MASK_CSR_SLIE_AIA;
+        }
     } else {
-        mask = WRITE_MASK_CSR_SLIE;
+        if (csrno == CSR_SLIP) {
+            mask = WRITE_MASK_CSR_SLIP;
+        } else {
+            mask = WRITE_MASK_CSR_SLIE;
+        }
     }
 
 #ifndef CONFIG_USER_ONLY
@@ -1118,6 +1130,14 @@ void andes_csr_configs(CPURISCVState *env)
     /* Update mimpid */
     andes_csr_from_config(csr_mimpid_map, 1,
                           (target_ulong *)&(riscv_cpu_cfg(env)->mimpid));
+
+    if ((env->andes_csr.csrno[CSR_MMSC_CFG] & MASK_MMSC_CFG_PMNDS) &&
+        (env->andes_csr.csrno[CSR_MRVARCH_CFG3] &
+         (MASK_MRVARCH_CFG3_SMAIA | MASK_MRVARCH_CFG3_SSAIA))) {
+        error_report("PMNDS cannot be enabled when smaia/ssaia is supported");
+        exit(1);
+    }
+
 }
 #endif
 

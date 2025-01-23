@@ -734,11 +734,26 @@ typedef enum RISCVException {
 #define IRQ_S_GEXT                         12
 #define IRQ_PMU_OVF                        13
 #define IRQ_LOCAL_MAX                      64
-#define IRQ_ANDES_BWEI                     17
+#define IRQ_ANDES_BWEI_M                   17
+#define IRQ_ANDES_BWEI_M_AIA               23
+#define IRQ_ANDES_BWEI_S                   (0x100 + IRQ_ANDES_BWEI_M)
+#define IRQ_ANDES_BWEI_S_AIA               (0x100 + IRQ_ANDES_BWEI_M_AIA)
 #define IRQ_ANDES_PMOVI_M                  18
 #define IRQ_ANDES_PMOVI_S                  (0x100 + IRQ_ANDES_PMOVI_M)
 /* -1 is due to bit zero of hgeip and hgeie being ROZ. */
 #define IRQ_LOCAL_GUEST_MAX                (TARGET_LONG_BITS - 1)
+
+/* Andes detailed exception cause (DCAUSE) */
+#define ANDES_DCAUSE_PM                    5
+#define ANDES_DCAUSE_PM_U                  (0 << ANDES_DCAUSE_PM)
+#define ANDES_DCAUSE_PM_S                  (1 << ANDES_DCAUSE_PM)
+#define ANDES_DCAUSE_PM_M                  (3 << ANDES_DCAUSE_PM)
+#define ANDES_DCAUSE_BWEI_BRE              1
+#define ANDES_DCAUSE_BWEI_BWE              2
+#define ANDES_DCAUSE_BWEI_PMP_L            3
+#define ANDES_DCAUSE_BWEI_PMP_S            4
+#define ANDES_DCAUSE_BWEI_PMA_L            5
+#define ANDES_DCAUSE_BWEI_PMA_S            6
 
 /* mip masks */
 #define MIP_USIP                           (1 << IRQ_U_SOFT)
@@ -755,7 +770,8 @@ typedef enum RISCVException {
 #define MIP_MEIP                           (1 << IRQ_M_EXT)
 #define MIP_SGEIP                          (1 << IRQ_S_GEXT)
 #define MIP_LCOFIP                         (1 << IRQ_PMU_OVF)
-#define MIP_ANDES_BWEI                     (1 << IRQ_ANDES_BWEI)
+#define MIP_ANDES_BWEI                     (1 << IRQ_ANDES_BWEI_M)
+#define MIP_ANDES_BWEI_AIA                 (1 << IRQ_ANDES_BWEI_M_AIA)
 #define MIP_ANDES_PMOVI                    (1 << IRQ_ANDES_PMOVI_M)
 
 /* sip masks */
@@ -771,7 +787,8 @@ typedef enum RISCVException {
 #define MIE_UTIE                           (1 << IRQ_U_TIMER)
 #define MIE_SSIE                           (1 << IRQ_S_SOFT)
 #define MIE_USIE                           (1 << IRQ_U_SOFT)
-#define MIE_ANDES_BWEI                     (1 << IRQ_ANDES_BWEI)
+#define MIE_ANDES_BWEI                     (1 << IRQ_ANDES_BWEI_M)
+#define MIE_ANDES_BWEI_AIA                 (1 << IRQ_ANDES_BWEI_M_AIA)
 #define MIE_ANDES_PMOVI                    (1 << IRQ_ANDES_PMOVI_M)
 
 /* Machine constants */

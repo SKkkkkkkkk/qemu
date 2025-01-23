@@ -557,9 +557,15 @@ static int riscv_cpu_andes_m_mode_irq(CPURISCVState *env)
         }
     }
 
-    if ((env->mie & MIE_ANDES_BWEI) && (env->mip & MIP_ANDES_BWEI)) {
+    if (riscv_cpu_cfg(env)->ext_smaia) {
+        if ((env->mie & MIE_ANDES_BWEI_AIA) &&
+            (env->mip & MIP_ANDES_BWEI_AIA)) {
+            env->mip &= ~MIP_ANDES_BWEI_AIA;
+            return IRQ_ANDES_BWEI_M_AIA;
+        }
+    } else if ((env->mie & MIE_ANDES_BWEI) && (env->mip & MIP_ANDES_BWEI)) {
         env->mip &= ~MIP_ANDES_BWEI;
-        return IRQ_ANDES_BWEI;
+        return IRQ_ANDES_BWEI_M;
     }
 
     return 0;
@@ -568,19 +574,25 @@ static int riscv_cpu_andes_m_mode_irq(CPURISCVState *env)
 static int riscv_cpu_andes_s_mode_irq(CPURISCVState *env)
 {
     target_ulong slie = env->andes_csr.csrno[CSR_SLIE];
-    if ((slie & MIE_ANDES_PMOVI) == 0) {
-        return 0;
-    }
-
     target_ulong mmsc_cfg = env->andes_csr.csrno[CSR_MMSC_CFG];
-    if ((mmsc_cfg & MASK_MMSC_CFG_PMNDS) == 0) {
-        return 0;
-    }
-
     target_ulong slip = env->andes_csr.csrno[CSR_SLIP];
-    if (slip & MIP_ANDES_PMOVI) {
+    if ((mmsc_cfg & MASK_MMSC_CFG_PMNDS) &&
+        (slie & MIE_ANDES_PMOVI) &&
+        (slip & MIP_ANDES_PMOVI)) {
         env->andes_csr.csrno[CSR_SLIP] &= ~MIP_ANDES_PMOVI;
         return IRQ_ANDES_PMOVI_S;
+    }
+
+    if (riscv_cpu_cfg(env)->ext_ssaia) {
+        if ((slie & MIE_ANDES_BWEI_AIA) &&
+            (env->andes_csr.csrno[CSR_SLIP] & MIP_ANDES_BWEI_AIA)) {
+            env->andes_csr.csrno[CSR_SLIP] &= ~MIP_ANDES_BWEI_AIA;
+            return IRQ_ANDES_BWEI_S_AIA;
+        }
+    } else if ((slie & MIE_ANDES_BWEI) &&
+               (env->andes_csr.csrno[CSR_SLIP] & MIP_ANDES_BWEI)) {
+        env->andes_csr.csrno[CSR_SLIP] &= ~MIP_ANDES_BWEI;
+        return IRQ_ANDES_BWEI_S;
     }
 
     return 0;
@@ -1487,9 +1499,27 @@ void riscv_cpu_do_transaction_failed(CPUState *cs, hwaddr physaddr,
     CPURISCVState *env = &cpu->env;
 
     if (access_type == MMU_DATA_STORE) {
-        if (response == MEMTX_ERROR || response == MEMTX_DECODE_ERROR) {
+        if (is_andes_riscv_cpu_type(OBJECT(cpu))) {
             /* Trigger interrupt and do not restore */
-            riscv_cpu_update_mip(env, MIP_ANDES_BWEI, BOOL_TO_MASK(1));
+            if (env->priv == PRV_M) {
+                env->andes_csr.csrno[CSR_MDCAUSE] =
+                    (env->priv << ANDES_DCAUSE_PM) | ANDES_DCAUSE_BWEI_BWE;
+                if (riscv_cpu_cfg(env)->ext_smaia) {
+                    riscv_cpu_update_mip(env, MIP_ANDES_BWEI_AIA,
+                                         BOOL_TO_MASK(1));
+                } else {
+                    riscv_cpu_update_mip(env, MIP_ANDES_BWEI, BOOL_TO_MASK(1));
+                }
+            } else {
+                if (riscv_cpu_cfg(env)->ext_ssaia) {
+                    env->andes_csr.csrno[CSR_SLIP] |= MIP_ANDES_BWEI_AIA;
+                } else {
+                    env->andes_csr.csrno[CSR_SLIP] |= MIP_ANDES_BWEI;
+                }
+                env->andes_csr.csrno[CSR_SDCAUSE] =
+                    (env->priv << ANDES_DCAUSE_PM) | ANDES_DCAUSE_BWEI_BWE;
+                cpu_interrupt(env_cpu(env), CPU_INTERRUPT_HARD);
+            }
             return;
         } else {
             cs->exception_index = RISCV_EXCP_STORE_AMO_ACCESS_FAULT;
@@ -1497,15 +1527,7 @@ void riscv_cpu_do_transaction_failed(CPUState *cs, hwaddr physaddr,
     } else if (access_type == MMU_DATA_LOAD) {
         cs->exception_index = RISCV_EXCP_LOAD_ACCESS_FAULT;
     } else {
-        if (riscv_cpu_all_pending(env) & (MIP_MEIP | MIP_SEIP | MIP_UEIP)) {
-            if (response == MEMTX_ERROR || response == MEMTX_DECODE_ERROR) {
-                /* do nothing (do not trigger excepction)*/
-            } else {
-                cs->exception_index = RISCV_EXCP_INST_ACCESS_FAULT;
-            }
-        } else {
-            cs->exception_index = RISCV_EXCP_INST_ACCESS_FAULT;
-        }
+        cs->exception_index = RISCV_EXCP_INST_ACCESS_FAULT;
     }
 
     env->badaddr = addr;
