@@ -1100,7 +1100,7 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
         for (int i = 0; i < CPU_45_SERIES_IOPMP300_NUM; i++) {
             s->iopmp_dev[i] =
                 atciopmp300_create(memmap[ANDES_AE350_IOPMP_APB + i].base,
-                                   qdev_get_gpio_in(DEVICE(s->plic),
+                                   qdev_get_gpio_in(DEVICE(s->irqchip),
                                                     ANDES_AE350_IOPMP_IRQ));
             iopmp_sink = &(ATCIOPMP300(s->iopmp_dev[i])->transaction_info_sink);
             iopmp_dispatcher_add_target(DEVICE(&s->iopmp_dispatcher),
@@ -1126,7 +1126,8 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
         for (int i = 0; i < CPU_23_SERIES_IOPMP200_NUM; i++) {
             s->iopmp_dev[i] =
                 atciopmp200_create(memmap[cpu_23_series_iopmp_list[i]].base,
-                    qdev_get_gpio_in(DEVICE(s->plic), ANDES_AE350_IOPMP_IRQ));
+                                   qdev_get_gpio_in(DEVICE(s->irqchip),
+                                                    ANDES_AE350_IOPMP_IRQ));
             iopmp_sink = iopmp200_get_sink(s->iopmp_dev[i]);
             iopmp_dispatcher_add_target(DEVICE(&s->iopmp_dispatcher),
                                         (StreamSink *)iopmp_sink,
