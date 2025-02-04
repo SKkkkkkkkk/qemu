@@ -1344,7 +1344,7 @@ static void rv64_andes_nx45v_cpu_init(Object *obj)
     CPURISCVState *env = &RISCV_CPU(obj)->env;
 
     riscv_cpu_set_misa_ext(
-            env, RVA | RVC | RVD | RVF | RVI | RVM | RVN | RVU | RVV | RVX);
+            env, RVA | RVC | RVD | RVF | RVI | RVM | RVU | RVV | RVX);
     rv64_andes_common_cpu_init(obj, VM_1_10_MBARE, andes_set_mmsc_cfg_l2c);
     cfg->mmu = false;
 
@@ -2916,7 +2916,6 @@ static const MISAExtInfo misa_ext_info_arr[] = {
     MISA_EXT_INFO(RVV, "v", "Vector operations"),
     MISA_EXT_INFO(RVG, "g", "General purpose (IMAFD_Zicsr_Zifencei)"),
     MISA_EXT_INFO(RVB, "b", "Bit manipulation (Zba_Zbb_Zbs)"),
-    MISA_EXT_INFO(RVN, "n", "User-Level Interrupts extension"),
     MISA_EXT_INFO(RVX, "x", "Non-standard extensions present"),
 };
 

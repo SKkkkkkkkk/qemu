@@ -911,7 +911,7 @@ static AndesCsrConfigInfo csr_misa_map[] = {
     {CONFIG_BOOL,   RV('K'), "isa-k"},
     {CONFIG_BOOL,   RV('L'), "isa-l"},
     {CONFIG_BOOL,   RV('M'), "isa-m"},
-    {CONFIG_BOOL,   RV('N'), "isa-n"},
+    {CONFIG_BOOL,         0, "isa-n"}, /* not supported */
     {CONFIG_BOOL,   RV('O'), "isa-o"},
     {CONFIG_BOOL,   RV('P'), "isa-p"},
     {CONFIG_BOOL,   RV('Q'), "isa-q"},
