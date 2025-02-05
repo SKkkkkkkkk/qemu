@@ -1041,6 +1041,7 @@ static void rv64_andes_ax46mp_cpu_init(Object *obj)
     cfg->marchid = ANDES_CPUID_AX46;
 
     /* Fixed extensions */
+    cfg->ext_sscofpmf = true;
     cfg->ext_svinval = true;
     cfg->ext_zca = true;
     cfg->ext_zfbfmin = true;
@@ -1060,7 +1061,6 @@ static void rv64_andes_ax46mp_cpu_init(Object *obj)
                                          BIT(V5_MMSC_CFG_VPLIC) |
                                          BIT(V5_MMSC_CFG_EV5PE) |
                                          BIT(V5_MMSC_CFG_LMSLVP) |
-                                         BIT(V5_MMSC_CFG_PMNDS) |
                                          BIT(V5_MMSC_CFG_CCTLCSR) |
                                          BIT(V5_MMSC_CFG_VCCTL) |
                                          BIT(V5_MMSC_CFG_EDSP) |
@@ -1084,6 +1084,7 @@ static void rv64_andes_ax46mpv_cpu_init(Object *obj)
     cfg->marchid = ANDES_CPUID_AX46;
 
     /* Fixed extensions */
+    cfg->ext_sscofpmf = true;
     cfg->ext_svinval = true;
     cfg->ext_zca = true;
     cfg->ext_zfbfmin = true;
@@ -1108,7 +1109,6 @@ static void rv64_andes_ax46mpv_cpu_init(Object *obj)
                                          BIT(V5_MMSC_CFG_VPLIC) |
                                          BIT(V5_MMSC_CFG_EV5PE) |
                                          BIT(V5_MMSC_CFG_LMSLVP) |
-                                         BIT(V5_MMSC_CFG_PMNDS) |
                                          BIT(V5_MMSC_CFG_CCTLCSR) |
                                          BIT(V5_MMSC_CFG_VCCTL) |
                                          BIT(V5_MMSC_CFG_EDSP) |
@@ -1615,6 +1615,7 @@ static void rv32_andes_a46mp_cpu_init(Object *obj)
     cfg->marchid = ANDES_CPUID_A46;
 
     /* Fixed extensions */
+    cfg->ext_sscofpmf = true;
     cfg->ext_svinval = true;
     cfg->ext_zca = true;
     cfg->ext_zfbfmin = true;
@@ -1633,7 +1634,6 @@ static void rv32_andes_a46mp_cpu_init(Object *obj)
                                          BIT(V5_MMSC_CFG_VPLIC) |
                                          BIT(V5_MMSC_CFG_EV5PE) |
                                          BIT(V5_MMSC_CFG_LMSLVP) |
-                                         BIT(V5_MMSC_CFG_PMNDS) |
                                          BIT(V5_MMSC_CFG_CCTLCSR) |
                                          BIT(V5_MMSC_CFG_VCCTL) |
                                          BIT(V5_MMSC_CFG_EDSP) |
@@ -1654,6 +1654,7 @@ static void rv32_andes_a46mpv_cpu_init(Object *obj)
     cfg->marchid = ANDES_CPUID_A46;
 
     /* Fixed extensions */
+    cfg->ext_sscofpmf = true;
     cfg->ext_svinval = true;
     cfg->ext_zca = true;
     cfg->ext_zfbfmin = true;
@@ -1677,7 +1678,6 @@ static void rv32_andes_a46mpv_cpu_init(Object *obj)
                                          BIT(V5_MMSC_CFG_VPLIC) |
                                          BIT(V5_MMSC_CFG_EV5PE) |
                                          BIT(V5_MMSC_CFG_LMSLVP) |
-                                         BIT(V5_MMSC_CFG_PMNDS) |
                                          BIT(V5_MMSC_CFG_CCTLCSR) |
                                          BIT(V5_MMSC_CFG_VCCTL) |
                                          BIT(V5_MMSC_CFG_EDSP) |
