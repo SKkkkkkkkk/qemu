@@ -10,28 +10,27 @@
 
 int gdb_handle_query_rcmd_andes_query(GArray *params, void *user_ctx)
 {
-    char reply[16];
     /* nds query target only can be 'SID' or 'OCD' */
     if (!g_strcmp0((const char *)gdbserver_state.mem_buf->data,
         NDS_QUERY_TARGET_CMD)) {
-        g_string_assign(gdbserver_state.str_buf, NDS_QUERY_TARGET);
+        gdb_memtohex(gdbserver_state.str_buf,
+                     (guint8 *)NDS_QUERY_TARGET_RES, strlen(NDS_QUERY_TARGET_RES));
         gdb_put_strbuf();
         return 0;
     }
     /* nds query endian only can be '[target]: [LE|BE]' */
     if (!g_strcmp0((const char *)gdbserver_state.mem_buf->data,
         NDS_QUERY_ENDIAN_CMD)) {
-        snprintf(reply, sizeof(reply), "%s: %s",
-                 NDS_QUERY_TARGET, NDS_QUERY_ENDIAN);
-        g_string_assign(gdbserver_state.str_buf, reply);
+        gdb_memtohex(gdbserver_state.str_buf,
+                     (guint8 *)NDS_QUERY_ENDIAN_RES, strlen(NDS_QUERY_ENDIAN_RES));
         gdb_put_strbuf();
         return 0;
     }
-    /* return hartid as string */
+    /* return empty id like ICEman */
     if (!g_strcmp0((const char *)gdbserver_state.mem_buf->data,
         NDS_QUERY_CPUID_CMD)) {
-        snprintf(reply, sizeof(reply), "%d", gdbserver_state.g_cpu->cpu_index);
-        gdb_memtohex(gdbserver_state.str_buf, (guint8 *)reply, strlen(reply));
+        gdb_memtohex(gdbserver_state.str_buf,
+                     (guint8 *)NDS_QUERY_CPUID_RES, strlen(NDS_QUERY_CPUID_RES));
         gdb_put_strbuf();
         return 0;
     }

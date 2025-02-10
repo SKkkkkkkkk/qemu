@@ -7,8 +7,9 @@
 #ifndef _ANDES_ACE_GDB_H_
 #define _ANDES_ACE_GDB_H_
 
-#define NDS_QUERY_TARGET    "SID"
-#define NDS_QUERY_ENDIAN    "LE"
+#define NDS_QUERY_TARGET_RES    "SID\n"
+#define NDS_QUERY_ENDIAN_RES    "SID: LE\n"
+#define NDS_QUERY_CPUID_RES     " \n"
 #define NDS_QUERY_TARGET_CMD    "nds query target"
 #define NDS_QUERY_ENDIAN_CMD    "nds query endian"
 #define NDS_QUERY_CPUID_CMD     "nds query cpuid"
