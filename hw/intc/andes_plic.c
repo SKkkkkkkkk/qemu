@@ -300,8 +300,6 @@ static void andes_plic_irq_request(void *opaque, int irq, int level)
     AndesPLICState *andes_plic = ANDES_PLIC(opaque);
     RISCVPLICState *riscv_plic = RISCV_PLIC(andes_plic);
 
-    uint32_t gw_state =
-        qatomic_read(&andes_plic->gw_state[irq >> 5]) & 1 << (irq & 31);
     /*
      * Keep level data for level triggered to re-generate IRQ
      * while receives complete message
@@ -309,11 +307,39 @@ static void andes_plic_irq_request(void *opaque, int irq, int level)
      * level value because we are receiving new request
      */
     andes_plic->level[irq] = level;
+    andes_plic_set_pending(andes_plic, irq, level > 0);
 
-    /* Interrupt Gateway State in-processing */
+    /* Check if any context has enabled the irq */
+    bool irq_enable = false;
+    uint32_t wordofs = irq / 32;  /* offset of the word in bitfield_words */
+    uint32_t bitofs = irq % 32;   /* offset of the enable bit in the word */
+    for (int i = 0; i < riscv_plic->num_addrs; i++) {
+        uint32_t enable_word = riscv_plic->enable[
+            i * riscv_plic->bitfield_words + wordofs];
+        irq_enable = (enable_word >> bitofs) & 0x1;
+        if (irq_enable) {
+            irq_enable = true;
+            break;
+        }
+    }
+
+    if (!irq_enable) {
+        return;
+    }
+
+    /* if an irq is set, Interrupt Gateway State is in-processing */
+    uint32_t gw_state = false;
+    for (int i = 0; i < riscv_plic->bitfield_words; i++) {
+        if (qatomic_read(&andes_plic->gw_state[i])) {
+            gw_state = true;
+            break;
+        }
+    }
+
+    /* Interrupt Gateway State is in-processing */
     if (gw_state) {
         /*
-         * Interrupt Gateway State in-processing,
+         * Interrupt Gateway State is in-processing,
          * If we receive upper level again, re-scan pending/claim
          * to avoid interrupt missing for handling
          */
@@ -323,13 +349,11 @@ static void andes_plic_irq_request(void *opaque, int irq, int level)
         return;
     }
 
-    /* If level is not in low state, set gateway state to in-processing */
+    /* If level is high, set the irq in gw_state and raise the interrupt */
     if (level) {
         andes_plic_set_gw_state(andes_plic, irq, true);
+        riscv_plic->riscv_plic_update(riscv_plic);
     }
-
-    andes_plic_set_pending(andes_plic, irq, level > 0);
-    riscv_plic->riscv_plic_update(riscv_plic);
 }
 
 static const MemoryRegionOps andes_plic_ops = {
