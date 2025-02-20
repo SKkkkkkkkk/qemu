@@ -260,7 +260,7 @@ static void common_semi_rw_cb(CPUState *cs, uint64_t ret, int err)
  do_fault:
         ret = 0; /* error: no bytes transmitted */
     }
-    common_semi_set_ret(cs, arg2 - ret);
+    common_semi_cb(cs, arg2 - ret, err);
 }
 
 /*
