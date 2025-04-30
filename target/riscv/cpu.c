@@ -2176,6 +2176,8 @@ static void andes_csr_reset_common(CPURISCVState *env)
     /* Read CSR from config file */
     andes_csr_configs(env);
 #endif
+    env->andes_csr.csrno[CSR_MICM_CFG] = 0x200091A; //! workaround for ax65
+    env->andes_csr.csrno[CSR_MDCM_CFG] = 0x200091A; //! workaround for ax65
 }
 
 static void andes_csr_sync_cpu_ext(CPURISCVState *env, RISCVCPU *cpu)
