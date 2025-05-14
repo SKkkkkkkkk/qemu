@@ -31,6 +31,11 @@ config ANDES_AE350
     select ATCIOPMP200
     select ATCIOPMP100
 
+config RHEA_A511
+    bool
+    default y
+    depends on RISCV64
+
 config MICROCHIP_PFSOC
     bool
     default y
