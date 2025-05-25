@@ -61,6 +61,11 @@ static void smarth_init(MachineState *machine)
     unsigned int smp_cpus = machine->smp.cpus;
     uint64_t kernel_entry = 0;
 
+    /* register system main memory (actual RAM) FIRST - before loading ELF */
+    memory_region_init_ram(main_mem, NULL, "smarth.sdram",
+                           machine->ram_size, &error_fatal);
+    memory_region_add_subregion(system_memory, 0, main_mem);
+
     /* Initialize SOC */
     object_initialize_child(OBJECT(machine), "soc", &s->soc[0],
                             TYPE_RISCV_HART_ARRAY);
@@ -68,19 +73,21 @@ static void smarth_init(MachineState *machine)
                             &error_abort);
     object_property_set_int(OBJECT(&s->soc[0]),  "num-harts", smp_cpus,
                             &error_abort);
+    
+    /* Load ELF file after memory is mapped */
     if (machine->kernel_filename) {
         kernel_entry = load_kernel(machine->kernel_filename);
         object_property_set_uint(OBJECT(&s->soc[0]),  "resetvec",
                                  kernel_entry, &error_abort);
-
+        printf("Loaded ELF file '%s' with entry point at 0x%lx\n", 
+               machine->kernel_filename, kernel_entry);
+    } else {
+        /* Default reset vector to 0 if no kernel specified */
+        object_property_set_uint(OBJECT(&s->soc[0]),  "resetvec", 0, &error_abort);
     }
+    
     sysbus_realize(SYS_BUS_DEVICE(&s->soc[0]), &error_abort);
     s->soc[0].harts[0].env.elf_start = kernel_entry;
-
-    /* register system main memory (actual RAM) */
-    memory_region_init_ram(main_mem, NULL, "smarth.sdram",
-                           machine->ram_size, &error_fatal);
-    memory_region_add_subregion(system_memory, 0, main_mem);
 
     /* create PLIC hart topology configuration string */
     plic_hart_config = riscv_plic_hart_config_string(smp_cpus);
